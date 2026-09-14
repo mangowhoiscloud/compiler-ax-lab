@@ -1,0 +1,36 @@
+name: Lab quality
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  lab-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified 2026-09-14
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Record actual checkout and PR identities
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git rev-parse HEAD
+          node -e 'console.log(JSON.stringify({head:process.env.PR_HEAD || null,base:process.env.PR_BASE || null,scope:"lab docs and arithmetic only"}))'
+      - run: node scripts/check.mjs
+  lab-ci:
+    needs: [lab-docs]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require explicit success
+        env:
+          DOCS_RESULT: ${{ needs.lab-docs.result }}
+        run: test "$DOCS_RESULT" = success
