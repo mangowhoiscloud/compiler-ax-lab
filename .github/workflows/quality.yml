@@ -22,8 +22,12 @@ jobs:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
           git rev-parse HEAD
-          node -e 'console.log(JSON.stringify({head:process.env.PR_HEAD || null,base:process.env.PR_BASE || null,scope:"lab docs and arithmetic only"}))'
+          node -e 'console.log(JSON.stringify({head:process.env.PR_HEAD || null,base:process.env.PR_BASE || null,scope:"lab docs, arithmetic and local demo runner; no Rust or NPU validation"}))'
       - run: node scripts/check.mjs
+      - name: Check local loop behavior
+        run: |
+          python3 --version
+          python3 -m unittest discover -s tests -v
   lab-ci:
     needs: [lab-docs]
     if: ${{ always() }}

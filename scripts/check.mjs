@@ -10,6 +10,9 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const allowed = new Set([
   '.gitignore', 'README.md', 'AGENTS.md', '.github/CODEOWNERS',
   '.github/pull_request_template.md', '.github/workflows/quality.yml',
+  'program.md', '.agents/skills/run-bounded-change-loop/SKILL.md', 'references/source-layouts.md',
+  'scripts/trial.py', 'tests/test_trial.py',
+  'examples/group-reduction/candidate.py', 'examples/group-reduction/check.py',
   'docs/context.md', 'docs/experiment.md', 'docs/quality.md', 'docs/merge.md', 'docs/sources.md',
   'scripts/check.mjs', 'report/check-experiment-plan.mjs', 'report/render-experiment-approval.mjs',
   'report/assets/compiler-ax-experiment-approval.html',
