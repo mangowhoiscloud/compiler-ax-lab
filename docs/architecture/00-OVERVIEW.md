@@ -27,7 +27,11 @@ compiler-ax-lab/
 ├── AGENTS.md                        작업별 읽기·수정·검사 경로
 ├── README.md                        목적·현재 상태·빠른 검사
 ├── program.md                       로컬 데모의 작업 규율
-├── .agents/skills/run-bounded-change-loop/SKILL.md
+├── .agents/skills/
+│   ├── run-bounded-change-loop/SKILL.md       로컬 후보 데모
+│   └── review-to-verified-pr/
+│       ├── SKILL.md                         조사·변경·원격 인계 선택
+│       └── references/review-evidence.md    조사할 때만 읽는 절차
 ├── docs/
 │   ├── architecture/
 │   │   ├── 00-OVERVIEW.md            구조·소유권·읽기 경로
@@ -71,6 +75,8 @@ trial.py → 고정 check.py → 후보 사본 실행
 4. 사람은 해당 사본과 증거를 확인한다. `READY_FOR_REVIEW`는 병합 명령이 아니다.
 
 MD는 에이전트가 읽는 작업 지침이다. 파일 접근 제한, 비용 차단, 검사 무결성을 자동으로 보장하지 않는다. 스크립트의 실제 검사 범위와 미구현 경계는 [로컬 상세 명세](01-LOCAL-TRIAL.md)에 분리한다.
+
+저장소 운영은 [review-to-verified-pr](../../.agents/skills/review-to-verified-pr/SKILL.md)로 구분한다. 진입점에서 조사·변경·원격 인계 중 필요한 경로를 고르면, 기존 검사 명령과 GitHub CI의 결과를 현재 revision에 연결한다. 공개 리뷰 조사는 조건부 참고 자료, 병합 조건은 `docs/merge.md`를 사용하며 데모 실행기의 상태나 권한을 바꾸지 않는다.
 
 ### 4.2 같은 PASS라도 다음 결정은 다르다
 

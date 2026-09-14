@@ -11,6 +11,8 @@ const allowed = new Set([
   '.gitignore', 'README.md', 'AGENTS.md', '.github/CODEOWNERS',
   '.github/pull_request_template.md', '.github/workflows/quality.yml',
   'program.md', '.agents/skills/run-bounded-change-loop/SKILL.md', 'references/source-layouts.md',
+  '.agents/skills/review-to-verified-pr/SKILL.md',
+  '.agents/skills/review-to-verified-pr/references/review-evidence.md',
   'scripts/trial.py', 'tests/test_trial.py',
   'examples/group-reduction/candidate.py', 'examples/group-reduction/check.py',
   'docs/context.md', 'docs/experiment.md', 'docs/quality.md', 'docs/merge.md', 'docs/sources.md',
@@ -46,23 +48,22 @@ for (const file of files) {
     assert.ok(target.startsWith(root) && existsSync(target), `Broken or escaping link: ${file} -> ${href}`);
   }
 }
-// Keep the architecture entrypoint complete; content/code agreement still needs review.
-function checkArchitectureIndex(index, pages) {
+// Keep entrypoint routes complete; content/code agreement still needs review.
+function checkIndexLinks(index, pages) {
   const links = new Set([...index.matchAll(/\]\(([^)#]+)(?:#[^)]*)?\)/g)].map(match => match[1]));
-  for (const page of pages) assert.ok(links.has(page), `Architecture page missing from index: ${page}`);
+  for (const page of pages) assert.ok(links.has(page), `Page missing from index: ${page}`);
 }
-checkArchitectureIndex('[Page](01.md#entry)', ['01.md']);
-assert.throws(() => checkArchitectureIndex('[Page](01.md)', ['02.md']), /missing from index/);
+checkIndexLinks('[Page](01.md#entry)', ['01.md']);
+assert.throws(() => checkIndexLinks('[Page](01.md)', ['02.md']), /missing from index/);
 const architecture = files.filter(file => file.startsWith('docs/architecture/') && file.endsWith('.md'));
 const indexPath = 'docs/architecture/00-OVERVIEW.md';
-checkArchitectureIndex(readFileSync(resolve(root, indexPath), 'utf8'),
+checkIndexLinks(readFileSync(resolve(root, indexPath), 'utf8'),
   architecture.filter(file => file !== indexPath).map(file => file.slice('docs/architecture/'.length)));
 const agents = readFileSync(resolve(root, 'AGENTS.md'), 'utf8');
 assert.ok(agents.includes(`](${indexPath})`), 'AGENTS must route to the architecture index');
 for (const section of ['## 3. 코드와 커밋의 컨벤션', '## 4. 공개 리뷰를 실행 가능한 요구로 바꾼다',
   '## 5. 변경을 검사하고 인계한다']) assert.ok(agents.includes(section), `Missing agent convention section: ${section}`);
-assert.ok(agents.includes('docs/sources.md#공개-agent-지침과-리뷰에서-채택한-규칙'), 'AGENTS must link convention provenance');
-assert.ok(agents.includes('docs/quality.md#별도-과제-후보-mapping-문법과-진단의-일치'), 'AGENTS must route compiler task selection');
+checkIndexLinks(agents, files.filter(file => file.startsWith('.agents/skills/') && file.endsWith('/SKILL.md')));
 const html = readFileSync(resolve(root, 'report/assets/compiler-ax-experiment-approval.html'), 'utf8');
 assert.deepEqual([...html.matchAll(/data-quality="([a-z-]+)"/g)].map(m => m[1]),
   ['contract-environment', 'scope-code-quality', 'output-behavior', 'integration-docs', 'independent-final', 'human-adoption']);

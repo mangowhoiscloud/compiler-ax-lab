@@ -42,7 +42,9 @@ node report/render-experiment-approval.mjs
 
 [현재 폴더·책임 지도](docs/architecture/00-OVERVIEW.md#3-현재-폴더와-책임)와 [로컬 실행기 상세 명세](docs/architecture/01-LOCAL-TRIAL.md)는 실제 파일·함수·CLI 한도·기록 필드를 연결합니다. [원격 명세](docs/architecture/02-REMOTE-EXECUTION.md)는 구현 전 스펙·권한·회수 절차를 별도로 정의합니다.
 
-[스킬](.agents/skills/run-bounded-change-loop/SKILL.md)은 [program.md](program.md)를 읽어 실행합니다. 에이전트가 baseline의 실제 차이를 진단하고 후보 하나를 수정하면, 실행기가 고정 검사기·유한 시도·시간 상한 아래에서 다시 검사합니다. 결과는 `REVISE`, `READY_FOR_REVIEW`, `STOP`으로 다음 행동을 제한합니다. 모델 호출이나 자동 패치 생성기는 추가하지 않았습니다. 기존 코딩 에이전트가 진단과 구현을 맡습니다.
+[AGENTS.md](AGENTS.md#1-요청에-맞는-경로를-고른다)에서 스킬을 선택합니다. 공개 리뷰·저장소 변경·승인된 원격 반영은 [review-to-verified-pr](.agents/skills/review-to-verified-pr/SKILL.md)가 안내하며, 선택한 경로의 상세 절차만 읽습니다. Git·검사·PR을 사용하는 작업 지침이지 자동 병합 서비스가 아닙니다.
+
+로컬 데모는 [run-bounded-change-loop](.agents/skills/run-bounded-change-loop/SKILL.md)가 [program.md](program.md)를 읽어 실행합니다. 에이전트가 baseline의 실제 차이를 진단하고 후보 하나를 수정하면, 실행기가 고정 검사기·유한 시도·시간 상한 아래에서 다시 검사합니다. 결과는 `REVISE`, `READY_FOR_REVIEW`, `STOP`으로 다음 행동을 제한합니다. 모델 호출이나 자동 패치 생성기는 추가하지 않았습니다. 기존 코딩 에이전트가 진단과 구현을 맡습니다.
 
 실행기는 명령·후보 사본·원문 출력·테스트 수·결과를 같은 attempt 아래에 남깁니다. 검사 통과는 사람 검토로 넘어갈 조건이며 자동 병합 권한이 아닙니다. MD와 같은 계정의 프로세스 분리는 보안 격리가 아닙니다. 공개 seed에는 실제 벤더에서 찾은 결함이나 보호 검사 문제가 포함되지 않습니다.
 

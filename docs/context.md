@@ -57,6 +57,7 @@ DoRA는 목적·관측 → 기존 설명의 공백 → 분석 관점 → 대응 
 | 무엇을 읽을지 | [AGENTS.md](../AGENTS.md)에서 요청에 맞는 문서만 선택합니다. |
 | 구조와 스펙을 어디서 확인할지 | [Architecture 인덱스](architecture/00-OVERVIEW.md)에서 현재 로컬 구현과 원격 설계로 나눠 읽습니다. 절차는 번호로 쓰고 필드·생산자·판정 주체를 연결합니다. |
 | 무엇을 수행하고 언제 멈출지 | [실행 skill](../.agents/skills/run-bounded-change-loop/SKILL.md)과 [program.md](../program.md)가 안내합니다. 현재 실행 범위는 로컬 데모입니다. |
+| 저장소 변경과 PR을 어떻게 인계할지 | [운영 skill](../.agents/skills/review-to-verified-pr/SKILL.md)이 조사·변경·승인된 원격 반영을 나눕니다. 조사 절차는 필요할 때만 읽고 기존 검사·병합 규약을 재사용합니다. |
 | 왜 그 규칙을 택했는지 | [출처 대장](sources.md)과 [원문 구조](../references/source-layouts.md)에 원문 위치·판본·채택 이유·적용 범위를 남깁니다. |
 | 어떤 결과였는지 | [실행기](../scripts/trial.py)와 실제 검사 기록으로 확인합니다. MD나 source hash를 판정값으로 사용하지 않습니다. |
 
