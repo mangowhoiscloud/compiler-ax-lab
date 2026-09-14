@@ -89,7 +89,7 @@ alphaevolve-on-googlecloud/
 
 **공개 client가 전체 탐색 엔진은 아닙니다.** 후보의 획득과 평가 제출 코드는 공개되어 있지만, 관리형 서비스의 모델·후보 선택·프로그램 DB를 모두 재현하는 저장소는 아닙니다. 또한 circle-packing 실행 예제는 후보 코드를 `exec`로 읽습니다. 이 예제만으로 평가 코드의 변조 방지나 OS 격리가 구현되었다고 판단할 수 없습니다. [client 경계](https://github.com/Google-Cloud-AI/alphaevolve-on-googlecloud/blob/b51ab7a6446d0168bf6db52c6dccbec414a21b3f/src/alpha_evolve/client.py#L262-L302), [후보 실행 코드](https://github.com/Google-Cloud-AI/alphaevolve-on-googlecloud/blob/b51ab7a6446d0168bf6db52c6dccbec414a21b3f/examples/circle_packing/src/evaluate.py#L45-L78)
 
-**실험과 통합의 기록.** skill은 실행 중 `.evolve/experiment_description.json`, `.evolve/source_map.json` 등을 만들도록 안내하고, 실험 뒤에는 보상 편법과 원래 코드로의 통합을 검토합니다. 이 이름들은 생성되는 작업 자료이며, 모두 원본 tree에 추적된 실험 결과라는 뜻은 아닙니다. [후속 검토 skill](https://github.com/Google-Cloud-AI/alphaevolve-on-googlecloud/blob/b51ab7a6446d0168bf6db52c6dccbec414a21b3f/skills/alpha_evolve_post_experiment/SKILL.md)
+**실험과 통합의 기록.** skill은 실행 중 `.evolve/experiment_description.json`, `.evolve/source_map.json` 등을 만들도록 안내하고, 실험 뒤에는 reward hacking과 원래 코드로의 통합을 검토합니다. 이 이름들은 생성되는 작업 자료이며, 모두 원본 tree에 추적된 실험 결과라는 뜻은 아닙니다. [후속 검토 skill](https://github.com/Google-Cloud-AI/alphaevolve-on-googlecloud/blob/b51ab7a6446d0168bf6db52c6dccbec414a21b3f/skills/alpha_evolve_post_experiment/SKILL.md)
 
 ### 3.2 공개 결과와 문제 저장소
 

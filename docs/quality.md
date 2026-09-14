@@ -22,7 +22,7 @@
 | Q2 실제 동작 | release 표적 테스트의 이름·실행 수·seed·입력·expected/actual·exit code. 세 variant의 그룹별 값을 별도 기대값과 비교 | 출력 오류는 반례. 0 tests·조건부 조기 return·누락 로그는 성공에서 제외한다. timeout/OOM의 원인과 비용을 남긴다. |
 | Q3 통합·문서 | 안정 revision에서 기존 `make test`. 문서 변경 시 `make mdbook-build`와 해당 예제 실행/`make mdbook-test`; 생성물은 재생성 diff 확인 | workspace 결과와 제외/ignored/NPU 미실행을 분리한다. docs build·파일 생성만으로 실행 성공을 주장하지 않는다. |
 | Q4 독립 최종 확인 | 공개 수정 종료 후 snapshot 고정. 보호 정상/의도 오류 구현에서 생성 테스트를 1회 평가; reference·parser·오차는 후보 밖에서 관리 | 정상 오탐/오류 누락/검사 무효를 분리한다. 실패 뒤 수정은 새 실험이다. 보호 로그를 같은 후보의 repair에 반환하지 않는다. |
-| Q5 사람의 채택 | 목적·구조·API·테스트 의미·잔여 위험 검토. 필수 검사 목록과 실제 receipt를 같은 candidate revision에 결속 | required check가 없거나 skipped/cancelled이면 완료 불가. 담당자가 이유와 함께 기각/보류한다. PR·병합·릴리스는 별도 승인이다. |
+| Q5 사람의 채택 | 목적·구조·API·테스트 의미·잔여 위험 검토. 필수 검사 목록과 실제 receipt를 같은 candidate revision에 연결 | required check가 없거나 skipped/cancelled이면 완료 불가. 담당자가 이유와 함께 기각/보류한다. PR·병합·릴리스는 별도 승인이다. |
 
 `PASS`, `FAIL`, `INVALID`, `NOT_RUN`을 검사별로 보존하고 timeout은 미완료 사유로 남긴다. 적용하지 않는 검사는 실행 전에 담당자가 근거와 함께 제외한다. 사후 N/A로 바꿔 통과율을 높이지 않는다. 기준 수정은 별도 변경이며 영향받은 A/B 결과를 다시 평가한다. 기존 실패는 baseline 문제부터 해소하거나 사전 예외를 합의한다. [추론]
 
