@@ -69,6 +69,16 @@ cargo test -p furiosa-opt-examples --release --test binary_add_tests -- --exact 
 
 `cargo furiosa-opt compile`은 선택 kernel의 번역·mapping/shape를 확인하는 별도 검사입니다. 이번처럼 kernel을 바꾸지 않는 host 테스트 보강에서는 이를 새 필수 후보 검사로 추가하지 않습니다. Kernel·target 산출물 변경이 필요하면 범위를 다시 합의하고 정적 검사와 필요한 장치 검사를 정합니다. CPU smoke에 NPU ELF 생성용 cross toolchain이나 장치 실행을 자동으로 포함하지 않습니다.
 
+### 별도 과제 후보: mapping 문법과 진단의 일치
+
+**상태: 공개 소스 기반 과제 준비이며 미실행입니다.** 기존 double-buffering 과제와 수치·판정 단위를 공유하지 않습니다. 목적은 mapping 문법, 생성된 AST, 오류 위치·안내가 같은 계약을 따르는지 검사하는 것입니다. [고정 문법·진단과 리뷰 근거](sources.md#공개-agent-지침과-리뷰에서-채택한-규칙)
+
+1. **대상:** 같은 `9b9cf0f`의 `furiosa-mapping-macro/src/parser/`를 읽습니다. 허용 변경은 해당 crate의 테스트와 필요한 테스트 helper·설명부터 정합니다. 제품 문법·진단 구현 수정이 필요하면 별도 bug-fix 범위로 합의합니다. 여기서 DSL parser는 검증 대상이며 후보 밖의 보호 판정기가 아닙니다.
+2. **정상·오류를 함께 확인:** 개발용 예시 `A / 4`, `A / {N}`, `A / B`, `A / (B, C)`는 parse 성공뿐 아니라 기대 AST를 확인합니다. `A /`, `A / [B]`는 예상 거절 위치와 diagnostic을 대조합니다. 오류 문자열 snapshot 갱신만으로 완료하지 않습니다. 문법상 불법, 적법하지만 미지원, 도구 준비 실패를 구별합니다.
+3. **실행 준비:** 표적 명령 후보는 `cargo test -p furiosa-mapping-macro --lib --release`입니다. 실제 test 목록·선택 수·toolchain·lockfile·명령 한도를 고정한 후 호환 환경에서 무변경 baseline부터 확인합니다. macro crate의 직접 의존성만 보고 전체 workspace 또는 ARM host가 검증됐다고 쓰지 않습니다. 이번 문서는 명령 성공을 기록한 receipt가 아닙니다.
+4. **판정:** 기대 거절을 검사하는 테스트는 해당 진단·위치 assertion이 통과해야 합니다. 무관한 Cargo build 실패를 거절 성공으로 세지 않습니다. 정상 입력의 잘못된 거절과 불법 입력의 잘못된 수용을 별도로 기록합니다. 정적 device compile·CPU 값·NPU 검사는 이 parser 검사와 합산하지 않습니다.
+5. **비교 전 조건:** 공개된 진단 수정과 위 예시는 개발용입니다. 미공개 대조군·입력·판정 단위·평가 개입·담당자를 별도로 고정하고 기존 실험 계약을 개정하기 전에는 A/B를 시작하지 않습니다. 현재 `trial.py --task furiosa`의 중단 경로를 우회하거나 Python 데모 판정을 Rust 결과에 적용하지 않습니다.
+
 ### Dioxus에서 옮길 것은 탐색 실패를 작은 회귀 검사로 남기는 방식이다
 
 Dioxus의 현재 코드는 구조화된 동작을 incremental renderer와 fresh rebuild 결과로 비교하고, 축소한 실패 입력을 일반 테스트에서 strict 조건으로 재생한다. 긴 libFuzzer 탐색은 별도 실행이다. 전체 corpus의 coverage 재생은 비교 결과를 의도적으로 버리는 코드가 있어 그 성공을 정확성 통과로 읽을 수 없다. [실측: 위 원문 대장]

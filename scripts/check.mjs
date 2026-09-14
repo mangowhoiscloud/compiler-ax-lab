@@ -59,12 +59,17 @@ checkArchitectureIndex(readFileSync(resolve(root, indexPath), 'utf8'),
   architecture.filter(file => file !== indexPath).map(file => file.slice('docs/architecture/'.length)));
 const agents = readFileSync(resolve(root, 'AGENTS.md'), 'utf8');
 assert.ok(agents.includes(`](${indexPath})`), 'AGENTS must route to the architecture index');
+for (const section of ['## 3. 코드와 커밋의 컨벤션', '## 4. 공개 리뷰를 실행 가능한 요구로 바꾼다',
+  '## 5. 변경을 검사하고 인계한다']) assert.ok(agents.includes(section), `Missing agent convention section: ${section}`);
+assert.ok(agents.includes('docs/sources.md#공개-agent-지침과-리뷰에서-채택한-규칙'), 'AGENTS must link convention provenance');
+assert.ok(agents.includes('docs/quality.md#별도-과제-후보-mapping-문법과-진단의-일치'), 'AGENTS must route compiler task selection');
 const html = readFileSync(resolve(root, 'report/assets/compiler-ax-experiment-approval.html'), 'utf8');
 assert.deepEqual([...html.matchAll(/data-quality="([a-z-]+)"/g)].map(m => m[1]),
   ['contract-environment', 'scope-code-quality', 'output-behavior', 'integration-docs', 'independent-final', 'human-adoption']);
 for (const anchor of [...html.matchAll(/href="#([^"]+)"/g)].map(m => m[1])) assert.ok(html.includes(`id="${anchor}"`));
 const pr = readFileSync(resolve(root, '.github/pull_request_template.md'), 'utf8');
-for (const field of ['Baseline SHA', 'PR head SHA', 'PR base SHA', 'checkout SHA', 'NOT_RUN', 'post-merge', '사람 검토']) assert.ok(pr.includes(field), field);
+for (const field of ['Baseline SHA', 'PR head SHA', 'PR base SHA', 'checkout SHA', 'NOT_RUN', 'post-merge', '사람 검토',
+  '관련 리뷰 요구', '환경 확인 근거', '실패 후 남은 상태', '기대 거절과 도구 실패']) assert.ok(pr.includes(field), field);
 const workflow = readFileSync(resolve(root, '.github/workflows/quality.yml'), 'utf8');
 for (const fragment of ['always()', 'needs: [lab-docs]', 'contents: read', 'node scripts/check.mjs', 'test "$DOCS_RESULT" = success']) assert.ok(workflow.includes(fragment), fragment);
 assert.ok(!workflow.includes('pull_request_target'), 'Do not run PR code with a privileged event');

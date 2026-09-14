@@ -23,6 +23,21 @@ MD 지침과 실행·평가 코드를 분리한 사례의 실제 경로와 판�
 
 과거 SWMAP의 0.4.0 workspace 수·backend 명칭은 날짜가 다른 기록이다. 이번 명령의 근거는 위 0.8.1 pin이다. 공개 driver stub을 내부 Compiler 소스로 해석하지 않는다.
 
+## 공개 Agent 지침과 리뷰에서 채택한 규칙
+
+확인일은 2026-09-14입니다. 아래 공개 지침·리뷰·소스와 이 lab의 적용 결정을 구분합니다. 운영 절차는 [AGENTS.md](../AGENTS.md#3-코드와-커밋의-컨벤션)에 두고 외부 prompt나 명령을 자동 실행하지 않습니다.
+
+| 원문과 판본 | 확인 범위 | 적용과 한계 |
+|---|---|---|
+| [torch-fx-rs AGENTS.md, 3024d6d](https://github.com/furiosa-ai/torch-fx-rs/blob/3024d6d157732e51b02ef67b808131bec4d652ef/AGENTS.md) | 전체 문서. 목적·구현 위치·기존 helper·작은 PR·표적 테스트·API 문서와 수명 규칙을 명시합니다. | 읽기 경로, 의미 보존, 작은 diff와 근거 인계를 채택합니다. PyO3/GIL·Python 3.10·구체 wrapper 구조는 해당 repo 규칙이며 lab 공통 규칙으로 복사하지 않습니다. |
+| [agent_skills AGENTS.md, d5fc482](https://github.com/furiosa-ai/agent_skills/blob/d5fc482fdca0af78aada5d1e183b4aad18ffbfc7/AGENTS.md) | 전체 문서. 최종 diff 기반 설명·원자적 커밋·사람 확인을 명시합니다. 같은 pin의 tree에는 진입점이 가리키는 `git-commit-helper/SKILL.md`가 없고 현재 이름은 `pr-restructure`입니다. | 의미 단위 변경과 현재 diff 확인을 채택합니다. 오래된 경로·명령 이름·복구용 destructive command를 복사하지 않습니다. prefix 금지는 lab의 기존 커밋 형식과 달라 이식하지 않습니다. |
+| [validator #34, 2026-06-25 리뷰](https://github.com/furiosa-ai/furiosa-rngd-validator/pull/34#discussion_r3472422897), [07-01 승인](https://github.com/furiosa-ai/furiosa-rngd-validator/pull/34#pullrequestreview-4608023875) | 실행 파일 부재를 활성화 파일만으로 놓쳐 기본 30분 polling까지 지연시키는 경로, 상태 의미와 README 정합성을 지적했습니다. | 긴 작업 전에 실제 실행 파일·환경을 확인합니다. 30분은 코드·리뷰의 지연 경로이며 이번 실측 시간이 아닙니다. 외부 skip/unknown을 lab PASS로 흡수하지 않습니다. |
+| [validator #48, 2026-07-24 재리뷰](https://github.com/furiosa-ai/furiosa-rngd-validator/pull/48#pullrequestreview-4774195374), [복구 파일 지적](https://github.com/furiosa-ai/furiosa-rngd-validator/pull/48#discussion_r3712120903), [최종 수정 ee270ad](https://github.com/furiosa-ai/furiosa-rngd-validator/commit/ee270ad60446a6b8c442df857477dcd8537f8b12) | 일부 ACS 적용 실패의 복원과 컨테이너 종료 후 복구 자료 보존을 확인했습니다. 최종 diff는 복원 실패 종료·상태 파일 보존·회귀 테스트를 포함합니다. | 실패 후 실제 상태·복구 결과·원문 증거를 보존합니다. NPU 검증 도구 사례이며 컴파일러 내부 병목이나 실제 장치 재실행 근거로 쓰지 않습니다. |
+| [코멘트 수집 코드, d5fc482](https://github.com/furiosa-ai/agent_skills/blob/d5fc482fdca0af78aada5d1e183b4aad18ffbfc7/scripts/fetch_pr_comments.py) | unresolved만 남기며 처음 100개 thread·50개 comment를 조회합니다. | 리뷰 학습에는 resolved 대화·일반 댓글·판정·후속 commit도 필요합니다. 같은 GitHub API를 쓰되 페이지 끝과 수집 실패를 기록합니다. 별도 엔진은 추가하지 않습니다. |
+| [mapping 문법](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-mapping-macro/src/parser/parser.lalrpop), [진단 테스트](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-mapping-macro/src/parser/diagnostic.rs) | Extent 문법의 네 형태와 `A /` 오류 위치·안내 테스트를 확인했습니다. | parse/AST와 거절 조건을 함께 검사하는 [별도 과제 후보](quality.md#별도-과제-후보-mapping-문법과-진단의-일치)를 준비합니다. 공개 예시를 보호 평가로 사용하지 않으며 아직 테스트를 실행하지 않았습니다. |
+
+`furiosa-opt`의 [PR #2 병합 commit](https://github.com/furiosa-ai/furiosa-opt/commit/a889fe762bbc1b7605b0ad630729ff1142e99475)과 [Copybara import](https://github.com/furiosa-ai/furiosa-opt/commit/06dda288eb450b97f702fc5b69dfb1777cfa9072)는 확인되지만 해당 PR 대화는 당시 공개 조회에서 확인되지 않았습니다. PR이 없었다거나 내부 리뷰가 느리다는 결론으로 바꾸지 않습니다. 지침은 선언된 기준이고, 공개 리뷰는 해당 변경의 판단 근거입니다. 조직 전체의 채택률·리뷰 시간은 별도 증거가 필요합니다.
+
 ## Dioxus: 전사에서 제기한 문제를 저장소의 검사로 대조
 
 [Jonathan Kelley, Building ambitious software](https://www.youtube.com/watch?v=H7vFrcNWXzs)의 보존 원어 자동 자막 중 05:30부터 종료까지를 이번에 다시 읽었다. 비어 있지 않은 이벤트 총 485개와 원본 SHA `fa27b1c4a4376ad1399e6f6bb3578d7d492300b54efcba5166be440634382538`를 확인했다. 원문 전사는 로컬에만 보존하며 이 공개 저장소에는 재배포하지 않는다. 웹 watch 페이지는 이번에도 throttled였으며 새 전사나 원음 검수를 했다고 쓰지 않는다.
