@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Compiler AX · 검산을 반영한 실험 시행도</title>
+<title>Compiler AX · 작업 분기와 실험 시행도</title>
 <style>
   *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#ecece8;color:#111;font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
   nav{max-width:1400px;margin:auto;padding:18px 40px;display:flex;gap:28px;font-size:16px}a{color:inherit;text-underline-offset:4px}a:focus-visible,summary:focus-visible{outline:3px solid #ed1b16;outline-offset:5px}
@@ -18,21 +18,37 @@
      Grammar: paired comparison. Nodes: common task, A, B, protected checks, review.
      A may use ordinary planning/reproduction/tests. B adds mandatory procedure, not extra answers.
   02 Question: who may change code, execute it, own the final oracle, and adopt the patch?
-     Grammar: horizontal swimlanes. Solid arrows carry contract/diff/commands/results/evidence.
-     Red dashed boundary = candidate cannot modify/read protected final checking material.
-     Nebius supplies execution, not authority. Pilot authority belongs to user/appointed reviewer.
+     Grammar: seven-node ownership/dataflow. Source: docs/architecture/02-REMOTE-EXECUTION.md §§3–5.
+     Owner -> Codex -> trusted controller -> CPU worker -> public receipt -> protected evaluation -> human.
+     Arrows are typed artifacts/preconditions, not tool-call authority. Entire remote path is unimplemented.
   03 Question: which preparation can overlap and which experiment follows?
      Grammar: nine-node dependency DAG. Host readiness also gates actual oracle validation.
-     Parallelism calibration fixes resources; workflow comparison tests the procedure;
-     a later single-factor comparison is optional and separately approved.
-     Solid = prerequisite; dashed = optional extension; red = blocking condition. No runs yet.
+     Source: docs/experiment.md sequence, docs/architecture/02-REMOTE-EXECUTION.md §§4,6.
+     Ready decision requires smoke, verified controls/access, separate comparison approval and all limits.
+     Calibration -> sequential A/B -> frozen final check; stopping and completion both require cleanup.
+     Later single-factor extensions stay in the appendix. No runs yet.
+  Routing table: AGENTS.md -> review-to-verified-pr/SKILL.md -> docs/kernels/double-buffering.md.
+     This is a documented operator procedure, not implemented Rust/cloud access enforcement.
   Sources: pinned furiosa-opt 9b9cf0fd..., public provider docs and research; links below.
      Personal account observations are excluded from this public edition.
   Ceiling: one task establishes feasibility/cost locations, not general productivity or NPU speed.
   Simplification: existing Git/Codex/stdout artifacts; no new storage service or event schema.
 -->
-<nav aria-label="승인본 목차"><a href="#execution">최종 시행도</a><a href="#quality">품질 기준·검사</a><a href="#merge">PR·병합</a><a href="#comparison">01 A/B 비교</a><a href="#authority">02 검사 권한</a><a href="#timing">시간식 검산</a><a href="#details">실행 계약·근거</a></nav>
+<nav aria-label="승인본 목차"><a href="#routing">작업 분기</a><a href="#execution">최종 시행도</a><a href="#quality">품질 기준·검사</a><a href="#merge">PR·병합</a><a href="#comparison">01 A/B 비교</a><a href="#authority">02 검사 권한</a><a href="#timing">시간식 검산</a></nav>
 <main>
+<section class="notes" id="routing">
+<h2>무엇을 바꾸는지에 따라 읽을 계약과 멈출 지점을 고릅니다.</h2>
+<p class="status"><strong>실행 완료:</strong> Python 로컬 데모·문서 CI와 별도 Cargo 경로의 AWS CPU smoke·로컬 double-buffering 정상/오류 대조 검사. <strong>미구현:</strong> Rust A/B 실행기, Nebius controller/worker, 보호 평가 환경. 아래 시행도는 후속 비교 설계이며 CPU 실행 결과는 <a href="../../docs/kernels/double-buffering.md#8-로컬-docker-실행-결과">별도 기록</a>에서 확인합니다.</p>
+<p><a href="../../AGENTS.md">AGENTS 진입점</a> → <a href="../../.agents/skills/review-to-verified-pr/SKILL.md#커널-작업의-분기">기존 운영 skill</a> → 필요한 경우에만 <a href="../../docs/kernels/double-buffering.md">double-buffering 계약</a>을 읽습니다. 공통 품질 기준은 <a href="../../docs/quality.md">quality.md</a>, 배정·예산·최종 판정은 <a href="../../docs/experiment.md">experiment.md</a>가 소유합니다.</p>
+<table aria-label="요청별 읽기와 행동 분기"><thead><tr><th>요청·발견한 조건</th><th>읽을 내용</th><th>다음 행동과 중단 조건</th></tr></thead><tbody>
+<tr><td>읽기·진단</td><td>고정 소스·입출력·데이터 이동</td><td>확인한 사실과 가설을 보고합니다. 수정·실행으로 확대하지 않습니다.</td></tr>
+<tr><td>테스트 보강 — 첫 과제</td><td>커널 공개 요구·독립 기대값·공통 품질</td><td>테스트·helper·설명만 수정합니다. 호환 환경·검사 연결·승인 전에는 NOT_RUN입니다.</td></tr>
+<tr><td>kernel·mapping·schedule·API·unsafe 변경 필요</td><td>영향받는 설계·수치·ABI 계약</td><td>테스트 보강을 멈추고 범위를 다시 확정합니다. 실제 target 변경에 맞는 검사를 별도로 선택합니다.</td></tr>
+<tr><td>oracle·오차·보호 판정 기준 변경 필요</td><td>운영자 소유 평가 계약</td><td>후보 수정과 분리해 검토합니다. 바뀐 기준을 기존 A/B 결과에 소급해 통과시키지 않습니다.</td></tr>
+<tr><td>원격 smoke·비교 실행</td><td>원격 명세·비용·권한·회수 조건</td><td>승인된 단계만 시작합니다. smoke 승인만으로 A/B 비교를 시작하지 않습니다.</td></tr>
+</tbody></table>
+<p><strong>A/B 공통 입력:</strong> 커널 문서에서 입력·의미·허용 파일·공개 검사 요구만 추출해 같은 판본으로 제공합니다. 전체 운영자 MD를 주입하지 않으며, B의 추가 작업 절차는 별도로 둡니다.</p>
+</section>
 <section class="sheet" id="comparison">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" role="img" aria-labelledby="t1 d1">
 <title id="t1">완료한 변경의 품질과 사람의 작업시간을 함께 비교합니다</title>
@@ -69,106 +85,126 @@
 </section>
 <section class="sheet" id="authority">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" role="img" aria-labelledby="t2 d2">
-<title id="t2">코딩 에이전트는 수정하고 실행하지만 최종 검사 기준은 소유하지 않습니다</title>
-<desc id="d2">사용자와 검사 담당자가 변경 계약을 정합니다. Codex는 허용된 파일을 수정하고 Nebius에서 공개 검사를 실행합니다. 후보 밖의 보호 실행기가 깨끗한 기준 코드에 diff를 적용하고 보호 검사를 실행합니다. 검사 기록과 원문을 받은 사용자가 최종 채택을 결정합니다.</desc>
+<title id="t2">후보, 클라우드 제어, 공개 검사, 보호 판정의 책임을 분리합니다</title>
+<desc id="d2">운영자가 공통 요구와 권한을 정하고 Codex는 후보 사본을 만듭니다. 신뢰된 controller만 Nebius 자원을 관리합니다. worker의 원문 결과를 재검증한 뒤, 양쪽 후보를 고정하고 별도 보호 평가와 사람의 채택 검토를 진행합니다. 원격 경로는 아직 구현하지 않았습니다.</desc>
 <defs><marker id="a2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9Z" fill="#111"/></marker></defs>
 <rect width="1400" height="900" fill="white"/>
-<text x="48" y="48" class="kicker">COMPILER AX / 02 · 권한과 실행</text><text x="1352" y="48" text-anchor="end" class="badge red">설계안 · 미실행</text>
-<text x="48" y="108" class="title">에이전트에게는 수정 권한을,</text><text x="48" y="160" class="title">별도 검사 담당자에게는 최종 검사 기준을 둡니다.</text>
-<rect x="236" y="188" width="1116" height="108" class="soft"/>
-<rect x="236" y="340" width="1116" height="188" class="soft"/>
-<rect x="236" y="604" width="1116" height="108" class="soft"/>
-<text x="48" y="224" class="bold">사용자 +</text><text x="48" y="260">검사 담당자</text>
-<text x="48" y="404" class="bold">후보 작업</text><text x="48" y="444" class="small muted">A/B 각각 격리</text>
-<text x="48" y="640" class="bold">보호 검사</text><text x="48" y="680" class="small muted">후보 밖에서 실행</text>
-<text x="48" y="798" class="bold">사용자</text><text x="48" y="834" class="small muted">최종 채택 판단</text>
-<!-- Five transitions: contract, command, observation, diff, evidence, disposition. -->
-<path d="M464 284 V356" class="line" marker-end="url(#a2)"/><text x="492" y="324" class="small">공개 변경 계약</text>
-<path d="M716 400 H916" class="line" marker-end="url(#a2)"/><text x="816" y="382" text-anchor="middle" class="small">명령·patch</text>
-<path d="M916 484 H716" class="line" marker-end="url(#a2)"/><text x="816" y="520" text-anchor="middle" class="small">출력·exit code</text>
-<path d="M464 512 V620" class="line" marker-end="url(#a2)"/><text x="484" y="596" class="small">후보 diff</text>
-<path d="M756 656 H852" class="line" marker-end="url(#a2)"/>
-<path d="M1088 696 V764" class="line" marker-end="url(#a2)"/><text x="1116" y="744" class="small">검사 근거</text>
-<rect x="260" y="204" width="1068" height="80" class="node"/>
-<text x="284" y="238" class="bold">과제·허용 diff·보존할 동작·reference·허용 오차·최종 검사 기준을 고정합니다.</text>
-<text x="284" y="270" class="small muted">보호 검사 입력과 판정 코드는 후보에게 노출하거나 수정 권한을 주지 않습니다.</text>
-<rect x="260" y="356" width="456" height="156" class="node"/>
-<text x="284" y="396" class="heading">Codex · 조사와 구현</text>
-<text x="284" y="440">허용한 코드·테스트·문서를 수정</text>
-<text x="284" y="484" class="small">공개 검사 후 재제출 최대 1회</text>
-<rect x="916" y="356" width="412" height="156" class="node"/>
-<text x="940" y="396" class="heading">Nebius · 실행 환경</text>
-<text x="940" y="440">격리된 CPU build/test</text>
-<text x="940" y="484" class="small">공개 소스·합성 입력만 사용</text>
-<path d="M236 560 H1352" fill="none" stroke="#ed1b16" stroke-width="2" stroke-dasharray="8 7"/>
-<rect x="740" y="540" width="600" height="38" fill="white"/><text x="756" y="567" class="small red">권한 경계 · 후보는 자기 합격 기준을 바꾸지 못함</text>
-<rect x="260" y="620" width="496" height="76" class="node"/>
-<text x="284" y="652" class="bold">깨끗한 기준 코드에 diff 적용</text><text x="284" y="682" class="small">최종 snapshot 1회 · 결과는 수정에 미사용</text>
-<rect x="852" y="620" width="476" height="76" class="node"/>
-<text x="876" y="652" class="bold">판정 요약 → 실제 값 → 원문</text><text x="876" y="682" class="small">Git diff · 명령 · 로그 · revision 연결</text>
-<rect x="260" y="764" width="1068" height="84" fill="#111"/>
-<text x="284" y="800" class="heading white">채택 / 기각 / 판단 보류 · 최종 실패 뒤 수정은 새 실험</text>
-<text x="284" y="832" class="small white">원격 실행 허가와 채택은 별개입니다. 실제 외부 PR·병합·릴리스는 이번 범위에 없습니다.</text>
-<text x="48" y="888" class="small muted">실행 기록의 주체는 Codex입니다. Nebius는 명령 결과를 제공하며, 보호 검사의 소유권을 대신하지 않습니다.</text>
+<text x="48" y="48" class="kicker">COMPILER AX / 02 · 기록의 생산자와 판단 주체</text><text x="1352" y="48" text-anchor="end" class="badge red">원격 CI · 설계안</text>
+<text x="48" y="108" class="title">코드를 쓰는 주체와 실행·판정 권한을 나눕니다.</text>
+<text x="48" y="160" class="small muted">화살표는 산출물·선행 조건의 전달입니다. Codex에 클라우드 관리 키를 주는 경로가 아닙니다.</text>
+<!-- Seven owned components; connectors precede nodes. Sources: remote §§3–5, experiment A/B protocol. -->
+<path d="M418 292 H514" class="line" marker-end="url(#a2)"/>
+<path d="M884 292 H980" class="line" marker-end="url(#a2)"/>
+<path d="M1166 360 V444" class="line" marker-end="url(#a2)"/>
+<path d="M980 512 H884" class="line" marker-end="url(#a2)"/>
+<path d="M514 512 H418" class="line" marker-end="url(#a2)"/>
+<path d="M232 580 V684" class="line" marker-end="url(#a2)"/>
+<rect x="424" y="250" width="84" height="32" fill="white"/><text x="466" y="274" text-anchor="middle" class="small">요구</text>
+<rect x="890" y="250" width="84" height="32" fill="white"/><text x="932" y="274" text-anchor="middle" class="small">후보</text>
+<rect x="1190" y="382" width="144" height="36" fill="white"/><text x="1200" y="408" class="small">고정 명령</text>
+<rect x="890" y="470" width="84" height="32" fill="white"/><text x="932" y="494" text-anchor="middle" class="small">결과</text>
+<rect x="424" y="470" width="84" height="32" fill="white"/><text x="466" y="494" text-anchor="middle" class="small">확인</text>
+<rect x="48" y="224" width="370" height="136" class="node"/>
+<text x="72" y="264" class="heading">운영자 · 계약</text>
+<text x="72" y="304" class="small">공개 요구·수정 범위·모델·상한</text>
+<text x="72" y="340" class="small muted">smoke와 비교 승인을 구분</text>
+<rect x="514" y="224" width="370" height="136" class="node"/>
+<text x="538" y="264" class="heading">Codex · 후보 생성</text>
+<text x="538" y="304" class="small">각 세션의 diff·실행 요청</text>
+<text x="538" y="340" class="small muted">대화·가설·개입 기록 보존</text>
+<rect x="980" y="224" width="372" height="136" class="node"/>
+<text x="1004" y="264" class="heading">Controller · 제어</text>
+<text x="1004" y="304" class="small">승인된 main에서 revision 확인</text>
+<text x="1004" y="340" class="small muted">생성·명령 전달·수집·회수</text>
+<rect x="980" y="444" width="372" height="136" class="node"/>
+<text x="1004" y="484" class="heading">CPU worker · 실행</text>
+<text x="1004" y="524" class="small">x86-64 build/test · 제한된 권한</text>
+<text x="1004" y="560" class="small muted">관리 키·개인 인증정보 없음</text>
+<rect x="514" y="444" width="370" height="136" class="node"/>
+<text x="538" y="484" class="heading">공개 결과 · 재검증</text>
+<text x="538" y="524" class="small">실제 테스트 수·값·exit code</text>
+<text x="538" y="560" class="small muted">원문·명령·snapshot 대응 확인</text>
+<rect x="48" y="444" width="370" height="136" fill="white" stroke="#ed1b16" stroke-width="2"/>
+<text x="72" y="484" class="heading">독립 평가 · 별도 권한</text>
+<text x="72" y="524" class="small">A/B 모두 고정 뒤 후보별 1회</text>
+<text x="72" y="560" class="small muted">보호 결과로 같은 후보 수정 금지</text>
+<rect x="256" y="608" width="1056" height="36" fill="white"/>
+<text x="272" y="636" class="small red">보호 fixture 저장소·정답·정상/오류 label·판정기는 후보에게 제공하지 않습니다.</text>
+<rect x="48" y="684" width="1304" height="116" fill="#111"/>
+<text x="72" y="728" class="heading white">사람의 채택 검토 · 결과와 판단 이유를 묶습니다.</text>
+<text x="72" y="772" class="small white">값 → 원문 근거 → diff를 확인하고 채택 / 반려 / 보류합니다. PR 병합·릴리스는 별도 승인입니다.</text>
+<text x="48" y="852" class="small muted">역할 분리는 계획입니다. 접근 차단·입력 공급·결과 보존·자원 회수를 실제로 검사해야 실행 준비가 끝납니다.</text>
+<text x="48" y="886" class="small muted">출처: 원격 명세 §3–5 · 실험 계약. 모델 기록과 worker 로그를 연결하되 요약·해시로 원문을 대신하지 않습니다.</text>
 </svg>
 </section>
 <section class="sheet" id="execution">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" role="img" aria-labelledby="t3 d3">
-<title id="t3">준비는 병렬로 진행하고 검사 병렬도 보정과 에이전트 작업 절차 비교는 순서대로 분리합니다</title>
-<desc id="d3">실행 허가와 예산을 고정한 뒤 CPU 환경과 독립 대조군을 준비합니다. 실제 대조군 검증은 host 준비 후 마칩니다. 준비가 실패하면 중단합니다. 검사 병렬도 보정으로 동일 검사 묶음의 슬롯 효과를 확인하고, 에이전트 작업 절차 비교에서 같은 자원 조건의 두 세션을 순차 실행합니다. 사람의 채택 검토 뒤 필요하면 후보 수나 검토 방식 중 한 요인만 별도로 비교합니다. 전체는 미실행 계획입니다.</desc>
+<title id="t3">준비 조건을 확인한 뒤 검사 병렬도를 보정하고 A/B를 순차 비교합니다</title>
+<desc id="d3">실행 승인을 단계별로 확인합니다. Rust 연결과 CPU smoke, 대조군 초안을 병렬 준비하되 실제 대조군 검증은 host 준비 이후입니다. 검사기와 보호 접근 및 비교 승인을 모두 확인해야 보정과 순차 A/B를 시작합니다. 미충족이면 보류하고 이미 만든 자원은 회수합니다. 정상 종료와 실패 모두 증거 보존과 회수 확인을 거칩니다.</desc>
 <defs><marker id="a3" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9Z" fill="#111"/></marker></defs>
 <rect width="1400" height="900" fill="white"/>
-<text x="48" y="48" class="kicker">COMPILER AX / 03 · 최종 실험 시행도</text><text x="1352" y="48" text-anchor="end" class="badge">설계 반영 · 실제 실행 대기</text>
-<text x="48" y="108" class="title">준비는 병렬로, 효과 검증은 질문별로 나눕니다.</text>
-<text x="48" y="158" class="small muted">실선: 선행 산출물 의존성 · 점선: 별도 합의할 확장 · 빨강: 실행을 막는 조건</text>
-<!-- Nine nodes. Planning proposal; no observed performance encoded. -->
-<path d="M360 290 V340" class="line" marker-end="url(#a3)"/><path d="M1040 290 V340" class="line" marker-end="url(#a3)"/>
-<path d="M678 385 H732" class="line" marker-end="url(#a3)"/>
-<path d="M360 450 V478 H700 V490 M1040 450 V478 H700" class="line"/>
-<path d="M780 522 H1050" class="line" marker-end="url(#a3)"/>
-<path d="M700 554 V566 H360 V592" class="line" marker-end="url(#a3)"/>
-<path d="M678 650 H732" class="line" marker-end="url(#a3)"/>
-<path d="M1040 708 V764" class="line" marker-end="url(#a3)"/>
-<path d="M732 806 H678" class="line" stroke-dasharray="7 6" marker-end="url(#a3)"/>
-<rect x="48" y="210" width="1304" height="80" fill="#111"/>
-<text x="72" y="245" class="heading white">실행 허가와 계약 고정</text>
-<text x="72" y="275" class="small white">revision · 허용 diff · 품질 검사·채택 기준 · 모델/예산 · 재시도 · 검사 담당자</text>
-<text x="390" y="322" class="small">독립 준비</text><text x="1070" y="322" class="small">비공개 보호 자료</text>
-<rect x="48" y="340" width="630" height="110" class="node"/>
-<text x="72" y="378" class="heading">Nebius CPU 환경 준비</text>
-<text x="72" y="414" class="small">AI Cloud VM → 고정 도구 → 무변경 CPU smoke</text>
-<text x="72" y="441" class="small muted">8 vCPU / 32 GiB 검토안 · 실제 자원/비용 먼저 확인</text>
-<rect x="732" y="340" width="620" height="110" class="node"/>
-<text x="756" y="378" class="heading">독립 판정 대조군 준비</text>
-<text x="756" y="414" class="small">정상 구현 + 실행 가능한 오류 주입 + 별도 기대값</text>
-<text x="756" y="441" class="small muted">초안은 병렬 준비 · 실제 검증은 host 준비 후 완료</text>
-<path d="M700 490 L780 522 L700 554 L620 522 Z" class="node"/>
-<text x="700" y="529" text-anchor="middle" class="small bold">둘 다 확인?</text>
-<rect x="1050" y="488" width="302" height="70" fill="white" stroke="#ed1b16" stroke-width="2"/>
-<text x="1070" y="517" class="small red bold">중단 · 원인 확인</text><text x="1070" y="545" class="small">예산/도구/판정기 미확정</text>
-<text x="900" y="510" text-anchor="middle" class="small red">아니요</text>
-<text x="520" y="553" text-anchor="middle" class="small">모두 통과</text>
-<rect x="48" y="592" width="630" height="116" class="node"/>
-<text x="72" y="630" class="heading">검사 병렬도 보정</text>
-<text x="72" y="666" class="small">같은 작업 × CPU 슬롯 1 / 2 · 생성 없이 재실행</text>
-<text x="72" y="695" class="small muted">같은 제한/cache · 무효면 중단 · 유효 결과로 설정</text>
-<rect x="732" y="592" width="620" height="116" class="node"/>
-<text x="756" y="630" class="heading">에이전트 작업 절차 비교</text>
-<text x="756" y="666" class="small">일반 Codex / 명시적 절차 · 순서를 섞어 순차 실행</text>
-<text x="756" y="695" class="small muted">코드·동작·통합 검사 → 독립 최종 검사 1회</text>
-<text x="706" y="745" text-anchor="middle" class="small">보정한 병렬도를 두 작업 절차에 동일하게 적용</text>
-<rect x="732" y="764" width="620" height="84" fill="#111"/>
-<text x="756" y="799" class="heading white">사람의 채택 검토</text>
-<text x="756" y="831" class="small white">필수 검사 근거 · 작업시간 · 비용 → 채택/기각/보류</text>
-<rect x="48" y="764" width="630" height="84" fill="#ecece8"/>
-<text x="72" y="799" class="heading">후속 단일 요인 비교</text>
-<text x="72" y="831" class="small">후보 수 또는 검토 방식 중 하나만 별도로 변경</text>
-<text x="48" y="882" class="small muted">완료 범위는 CPU 유지보수 실험입니다. RNGD 장치 검증·외부 PR·병합은 별도 승인 단계입니다.</text>
+<text x="48" y="48" class="kicker">COMPILER AX / 03 · 승인 후 시행 절차</text><text x="1352" y="48" text-anchor="end" class="badge red">CPU 검증 완료 · A/B 대기</text>
+<text x="48" y="108" class="title">준비는 병렬로, 비교는 순차로, 종료는 회수까지.</text>
+<text x="48" y="158" class="small muted">실선: 선행 조건 · 빨강: 보류 분기. 준비 통과·본 비교 승인 전에는 모델 작업을 시작하지 않습니다.</text>
+<!-- Nine nodes. Conditional decision has explicit yes/no. Any stop uses the common cleanup procedure below. -->
+<path d="M344 284 V340" class="line" marker-end="url(#a3)"/><path d="M1040 284 V340" class="line" marker-end="url(#a3)"/>
+<path d="M638 402 H732" class="line" marker-end="url(#a3)"/>
+<path d="M344 464 V480 H700 M1040 464 V480 H700" class="line"/>
+<path d="M700 480 V488" class="line" marker-end="url(#a3)"/>
+<path d="M780 532 H1032" class="line" marker-end="url(#a3)"/>
+<path d="M700 576 V596 H246 V624" class="line" marker-end="url(#a3)"/>
+<path d="M444 690 H488" class="line" marker-end="url(#a3)"/><path d="M904 690 H952" class="line" marker-end="url(#a3)"/>
+<path d="M1352 532 H1380 V844 H1352" class="line" marker-end="url(#a3)"/>
+<path d="M1152 756 V816" class="line" marker-end="url(#a3)"/>
+<rect x="48" y="196" width="1304" height="88" fill="#111"/>
+<text x="72" y="234" class="heading white">단계별 계약·허가 고정</text>
+<text x="72" y="270" class="small white">smoke: 환경·기존 검사·비용·회수 승인 / 비교: 입력·oracle·보호 접근·모델·예산까지 추가 확정</text>
+<text x="370" y="320" class="small">독립 구현·초안 준비</text><text x="1070" y="320" class="small">평가 담당자</text>
+<rect x="48" y="340" width="590" height="124" class="node"/>
+<text x="72" y="380" class="heading">Rust 연결 → 승인된 CPU smoke</text>
+<text x="72" y="418" class="small">후속 계획: cpu-d3 · 8 vCPU / 32 GiB · x86-64</text>
+<text x="72" y="450" class="small muted">native artifact·실제 실행 수·취소·회수 검증 필요</text>
+<rect x="732" y="340" width="620" height="124" class="node"/>
+<text x="756" y="380" class="heading">독립 oracle·대조군·접근 경계 준비</text>
+<text x="756" y="418" class="small">입력·수치·正常/오류 구별 · 보호 평가 환경</text>
+<text x="756" y="450" class="small muted">초안은 병렬 · 실제 검증은 host 준비 이후</text>
+<path d="M700 488 L780 532 L700 576 L620 532 Z" class="node"/>
+<text x="700" y="540" text-anchor="middle" class="small bold">조건 충족?</text>
+<rect x="816" y="496" width="184" height="32" fill="white"/><text x="908" y="520" text-anchor="middle" class="small red">아니요</text>
+<rect x="388" y="572" width="224" height="34" fill="white"/><text x="500" y="598" text-anchor="middle" class="small">예 · 비교 승인 포함</text>
+<rect x="1032" y="496" width="320" height="72" rx="12" fill="white" stroke="#ed1b16" stroke-width="2"/>
+<text x="1056" y="528" class="small red bold">보류 · 미충족 조건 기록</text>
+<text x="1056" y="555" class="small">이미 만든 자원은 회수</text>
+<rect x="48" y="624" width="396" height="132" class="node"/>
+<text x="72" y="666" class="heading">검사 병렬도 보정</text>
+<text x="72" y="706" class="small">같은 3검사 · 슬롯 1 / 2</text>
+<text x="72" y="740" class="small muted">1→2, 2→1 · 생성 없음</text>
+<rect x="488" y="624" width="416" height="132" class="node"/>
+<text x="512" y="666" class="heading">Codex A/B 순차 작업</text>
+<text x="512" y="706" class="small">같은 VM · 새 사본·쓰기 cache</text>
+<text x="512" y="740" class="small muted">각 공개 작업 종료 → 양쪽 고정</text>
+<rect x="952" y="624" width="400" height="132" class="node"/>
+<text x="976" y="666" class="heading">독립 검사 → 사람 검토</text>
+<text x="976" y="706" class="small">후보별 1회 · 보호 결과 재사용 금지</text>
+<text x="976" y="740" class="small muted">채택 / 반려 / 보류와 비용 기록</text>
+<text x="48" y="796" class="small red">어느 단계든 실패·취소하면 같은 종료 절차로 이동합니다. 재시도 조건은 아래 조치표를 따릅니다.</text>
+<rect x="48" y="816" width="1304" height="56" rx="12" fill="#111"/>
+<text x="72" y="853" class="white">증거 보존 → 소유 VM·disk·임시 키 회수 → 재조회 확인 / 회수 미확인이면 새 실행 보류</text>
 </svg>
 </section>
 <section id="details" class="notes">
 <h2>승인할 내용과 남은 결정</h2>
-<p class="status">기존 시행도의 명칭을 현재 기준으로 정리했습니다. 최신 환경·CI·회수 절차는 <a href="../../docs/experiment.md">실험 계약</a>을 따릅니다. 이 페이지의 시간은 계산 예시이며 실제 실험은 미실행입니다. 실행 예산과 접근 권한을 확정하기 전에는 검사 병렬도 보정이나 에이전트 작업 절차 비교를 시작하지 않습니다.</p>
+<p class="status">작업 분기·controller/worker 책임·실행 조건·회수 절차를 <a href="../../docs/experiment.md">실험 계약</a>과 맞췄습니다. AWS 무변경 Rust CPU smoke와 로컬 Docker의 <a href="../../docs/kernels/double-buffering.md#8-로컬-docker-실행-결과">double-buffering 정상 검사·공개 오류 대조군 검출</a>은 완료했습니다. 이 도식의 A/B·보호 평가·NPU 검사는 남아 있으며, 표시된 시간은 측정값이 아닌 계산 예시입니다.</p>
+<details open id="disposition"><summary>관측 결과에 따라 수정·보류·종료를 나눕니다</summary>
+<table aria-label="검사 이후 행동 분기"><thead><tr><th>관측</th><th>다음 행동</th><th>판정 주체·남길 근거</th></tr></thead><tbody>
+<tr><td>공개 검사에서 요구 위반 확인</td><td>허용 파일·총예산 안에서 재제출 최대 1회. 범위 확대가 필요하면 보류</td><td>후보: 반례 → 원인 → 최소 수정. 담당자: 실제 검사 결과 재확인</td></tr>
+<tr><td>인프라 장애 확인</td><td>잔존 상태 확인 후 같은 revision 재실행 최대 1회. 같은 총예산 적용</td><td>운영자: 원문 오류·남은 자원·복구 근거. 원인 미상은 인프라 장애로 단정하지 않음</td></tr>
+<tr><td>0 tests·증거 손실·runner 오류 / timeout</td><td>무효 / 미완료로 각각 기록. 성공이나 결함 검출로 세지 않음</td><td>신뢰된 판정기: 실제 실행 수·로그·종료 상태. 보완 가능성은 기존 한도 안에서 판단</td></tr>
+<tr><td>양쪽 공개 작업 종료·snapshot 고정</td><td>별도 보호 평가를 후보별 1회 시행. 개별 결과로 같은 후보를 수정하지 않음</td><td>평가 담당자: TP/FP/TN/FN과 무효·미완료·보류. 필수 판정 누락은 완료가 아님</td></tr>
+<tr><td>종료·실패·취소</td><td>근거 보존 → 소유 자원 회수 → 재조회. 회수 미확인 시 새 실행 보류</td><td>controller·운영자: VM/disk/임시 키의 정확한 식별자·삭제/재조회 결과</td></tr>
+</tbody></table>
+<p>원격 실행기와 보호 평가는 구현 전입니다. 이 표가 자동 집행되는 상태는 아닙니다. 필요한 입력 값은 신뢰된 실행 인터페이스로 테스트에 공급하되, 보호 자료 저장소·정답·구현 label·판정기와 생성 세션으로의 결과 반환을 제한합니다.</p>
+</details>
 <p><strong>승인 제안:</strong> 공개 Rust 유지보수 과제 하나로 시작하고, 일반 Codex와 변경·검증 절차를 명시한 Codex를 비교합니다. 에이전트가 만든 코드의 양보다 정확한 변경을 검토하는 데 든 총 사람 작업시간을 우선 봅니다. B는 절차를 묶은 개입이므로 첫 비교만으로 어느 구성 요소가 효과를 냈는지는 구분할 수 없습니다.</p>
 <details open id="quality"><summary>품질 기준: 기존 컨벤션을 지키고 실제 판정 능력을 확인합니다</summary>
 <p>Furiosa <code>9b9cf0f / 0.8.1</code>, Dioxus <code>ada3b67</code>의 공개 코드와 Dioxus 보존 전사를 대조했습니다. <strong>수용 기준은 A/B 공통</strong>입니다. B에만 절차 안내를 추가하며 검사 문턱·보호 정답·도구 차이를 효과로 세지 않습니다. <a href="../../docs/quality.md">컨벤션·품질 계약 정본</a>과 <a href="../../docs/sources.md">원문 대장</a>에 상세 조건을 남겼습니다.</p>
@@ -183,9 +219,9 @@
 </tbody></table>
 <p><strong>실행 순서:</strong> 범위·코드 품질, 출력 동작, 통합·문서 검사에서 실패하면 허용된 재제출·예산 안에서 수정합니다. snapshot 고정 뒤 독립 최종 검사를 한 번 시행합니다. 보호 실패 뒤 수정은 새 실험입니다. lint 예외·적용하지 않을 검사는 시작 전에 담당자가 근거와 함께 승인하며 사후 제외로 성공률을 높이지 않습니다.</p>
 <p><strong>재사용할 명령:</strong> <code>make fmt</code>, <code>make check</code>, <code>make clippy</code>, <code>cargo machete</code>, <code>make test</code>입니다. fmt는 check-only, clippy는 <code>-D warnings</code>, test는 release입니다. 문서 build와 예제 실행을 분리합니다. Furiosa의 <code>clippy-npu</code>는 별도 target이며 Dioxus의 <code>--all-features</code>를 그대로 적용하지 않습니다.</p>
-<p>실재하는 smoke 후보 명령은 <code>cargo test -p furiosa-opt-examples --release --test binary_add_tests -- --list</code>입니다. 이름을 확인한 뒤 마지막 인자를 <code>-- --exact test_binary_add_2048</code>로 바꿔 실행합니다. 목록 조회도 빌드를 유발할 수 있습니다. <code>double_buffering_tests.rs</code>는 만들 파일의 제안명이며 아직 실행한 테스트가 아닙니다.</p>
+<p>실행한 smoke 명령은 <code>cargo test -p furiosa-opt-examples --release --test binary_add_tests -- --list</code>에서 이름을 확인한 뒤 <code>-- --exact test_binary_add_2048</code>로 선택했습니다. 목록 조회도 빌드를 유발합니다. 추가한 <code>double_buffering_tests.rs</code>는 SDK 3개·helper 2개가 통과했으며, 실제 명령·원문·소스와 바이너리 확인은 <a href="../../docs/kernels/double-buffering.md#8-로컬-docker-실행-결과">실행 기록</a>에 연결합니다.</p>
 <p><strong>Dioxus에서 확인한 경고:</strong> 축소된 퍼징 실패는 strict 회귀 테스트로 재생하지만 전체 corpus의 coverage 재생은 비교 결과를 의도적으로 무시합니다. 명령 성공만 보고 정확성 통과로 기록하면 안 됩니다. 첫 파일럿은 고정 경계 입력으로 시작하고 후속 탐색에서 발견한 실패를 축소·검토해 회귀 검사에 남깁니다. 무제한 퍼징·새 CI 서비스는 추가하지 않았습니다.</p>
-<p class="status">이 표는 검사 설계입니다. Rust 검사·원격 CI는 아직 실행하지 않았습니다. 기존 컨벤션을 따르되 평가 기준의 변경 권한은 후보에게 주지 않습니다.</p>
+<p class="status">이 표는 전체 검사 설계입니다. 표적 Rust CPU·fmt·Clippy 결과와 lab 문서 CI를 구분하며, 미완료 통합 검사·보호 평가·NPU 검사를 완료로 세지 않습니다. 평가 기준의 변경 권한은 후보에게 주지 않습니다.</p>
 </details>
 <details open id="merge"><summary>PR·병합: 검사한 revision과 사람이 받아들인 변경을 연결합니다</summary>
 <p><a href="../../docs/merge.md">병합 절차</a>와 <a href="../../.github/pull_request_template.md">실제 PR 템플릿</a>을 분리 작업공간에 추가했습니다. 작은 branch → 로컬 검사 → Draft PR → 현재 head/base 통합 검사 → 사람 검토 → 병합 → main 재검사 순서입니다. 실패하면 수정 또는 revert PR로 처리하며 릴리스는 별도 승인입니다.</p>
@@ -194,10 +230,11 @@
 </details>
 <details open><summary>첫 과제는 무엇을 고치고, 무엇으로 확인할까?</summary>
 <p><code>furiosa-opt 0.8.1 / 9b9cf0fdc78df00cdc430eae725a5ad9084a735e</code>의 double-buffering 예제에는 rolled, software-pipelined, unrolled 구현이 있습니다. 첫 과제로 제안하는 일은 세 구현의 <strong>그룹별 출력과 경계 처리를 확인하는 회귀 검사 보강</strong>입니다. 제품 버그를 발견한 상태는 아닙니다.</p>
-<p>별도 기대값 계산 <code>out[t,g,o] = sum_r activation[t,r] * weight[g,o,r]</code>과 비교하도록 설계합니다. 처음에는 반올림 해석이 명확한 작은 입력과 그룹별로 다른 값을 씁니다. 첫·마지막 그룹과 잘못된 그룹 짝을 구별하도록 하되, 정확한 입력·허용 오차·범위는 실행 전에 고정합니다. 테스트를 추가하는 과제이므로 테스트 파일의 존재가 아니라, 보호된 정상·의도 오류 코드에 그 테스트를 적용했을 때 제대로 구별하는지 확인합니다.</p>
-<p>의도적으로 마지막 그룹을 누락한 코드는 검사기의 준비를 확인하기 위한 대조군입니다. 실제 Furiosa 결함으로 보고하지 않습니다. 준비 과정의 답·로그와 보호 입력은 A/B 후보 세션에 전달하지 않으며, 공개 요구와 추가 설명은 양쪽에 동일하게 제공합니다.</p>
+<p>독립 i32 기대값 <code>out[t,g,o] = sum_r activation[t,r] * weight[g,o,r]</code>과 세 구현의 전체 출력을 비교했습니다. 입력·중간 합·최종 bf16 변환이 정확한 정수 집합을 먼저 고정해 그룹 오류와 반올림 차이를 구별했고, 18개 case의 46,080개 값이 일치했습니다. 일반 실수·다른 shape나 NPU 실행으로 범위를 넓히지 않습니다.</p>
+<p>공개 오류 대조군은 두 번째 그룹에서도 첫 번째 TRF를 읽도록 한 줄을 바꾼 별도 사본입니다. 컴파일 성공 뒤 예상한 그룹의 수치 assertion이 실패했습니다. 실제 Furiosa 결함이나 보호 평가 결과가 아니며, 후속 A/B에는 별도 비공개 입력·변이·판정 계약이 필요합니다. <a href="../../docs/kernels/double-buffering.md">데이터 이동·고정 수치 계약·실행 근거</a></p>
 </details>
-<details open id="timing"><summary>검산 결과: 대기를 없앤 기준선과 비교합니다</summary>
+<details id="timing"><summary>산술 부록: 같은 작업량의 대기·병렬화 비용 — 실측 아님</summary>
+<p><strong>첫 시행은 위의 공개 검사 3개·슬롯 1/2 보정입니다.</strong> 아래 후보 3개 시간식은 기존 설계의 계산 예시이며 첫 A/B에 다중 후보를 추가하는 계획이 아닙니다.</p>
 <p>같은 후보 3개, 공통 준비 15분, 후보당 생성 10분·검사 20분, 최종 검토 15분을 가정합니다. 앞서 제시한 120분은 생성 전체가 끝날 때까지 검사를 기다리는 시간입니다. 준비 즉시 실행하는 같은 정책끼리 비교하면 <strong>100분 → 80분</strong>입니다. 병렬 쪽의 추가 비용이 5분이면 85분으로, 약 1.18배입니다. 이 조건에서 CPU 슬롯이 2개이면 LLM 슬롯 1개와 3개의 결과는 같습니다.</p>
 <table aria-label="실측이 아닌 동일 작업량 시간 검산"><thead><tr><th>LLM / CPU 슬롯</th><th>단계 전체 대기</th><th>준비 즉시 실행</th></tr></thead><tbody>
 <tr data-timing="1,1,120,100"><td>1 / 1</td><td>120분</td><td>100분</td></tr>

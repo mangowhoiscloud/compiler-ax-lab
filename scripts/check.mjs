@@ -11,13 +11,19 @@ const allowed = new Set([
   '.gitignore', 'README.md', 'AGENTS.md', '.github/CODEOWNERS',
   '.github/pull_request_template.md', '.github/workflows/quality.yml',
   'program.md', '.agents/skills/run-bounded-change-loop/SKILL.md', 'references/source-layouts.md',
+  'references/frontier-engineering-2026.md',
   '.agents/skills/review-to-verified-pr/SKILL.md',
   '.agents/skills/review-to-verified-pr/references/review-evidence.md',
   'scripts/trial.py', 'tests/test_trial.py',
   'examples/group-reduction/candidate.py', 'examples/group-reduction/check.py',
+  'examples/furiosa-double-buffering/tests/double_buffering_tests.rs',
+  'examples/furiosa-double-buffering/tests/support/double_buffering_reference.rs',
+  'examples/furiosa-double-buffering/controls/reuse-first-trf.patch',
   'docs/context.md', 'docs/experiment.md', 'docs/quality.md', 'docs/merge.md', 'docs/sources.md',
   'docs/architecture/00-OVERVIEW.md', 'docs/architecture/01-LOCAL-TRIAL.md',
   'docs/architecture/02-REMOTE-EXECUTION.md',
+  'docs/kernels/double-buffering.md',
+  'docs/token-factory-sandbox.md',
   'scripts/check.mjs', 'report/check-experiment-plan.mjs', 'report/render-experiment-approval.mjs',
   'report/assets/compiler-ax-experiment-approval.html',
   ...[1, 2, 3].map(i => `report/assets/compiler-ax-experiment-approval-${i}.png`),
@@ -64,6 +70,11 @@ assert.ok(agents.includes(`](${indexPath})`), 'AGENTS must route to the architec
 for (const section of ['## 3. 코드와 커밋의 컨벤션', '## 4. 공개 리뷰를 실행 가능한 요구로 바꾼다',
   '## 5. 변경을 검사하고 인계한다']) assert.ok(agents.includes(section), `Missing agent convention section: ${section}`);
 checkIndexLinks(agents, files.filter(file => file.startsWith('.agents/skills/') && file.endsWith('/SKILL.md')));
+const kernels = files.filter(file => file.startsWith('docs/kernels/') && file.endsWith('.md'));
+checkIndexLinks(agents, kernels);
+checkIndexLinks(readFileSync(resolve(root, indexPath), 'utf8'), kernels.map(file => file.replace('docs/', '../')));
+checkIndexLinks(readFileSync(resolve(root, '.agents/skills/review-to-verified-pr/SKILL.md'), 'utf8'),
+  kernels.map(file => `../../../${file}`));
 const html = readFileSync(resolve(root, 'report/assets/compiler-ax-experiment-approval.html'), 'utf8');
 assert.deepEqual([...html.matchAll(/data-quality="([a-z-]+)"/g)].map(m => m[1]),
   ['contract-environment', 'scope-code-quality', 'output-behavior', 'integration-docs', 'independent-final', 'human-adoption']);

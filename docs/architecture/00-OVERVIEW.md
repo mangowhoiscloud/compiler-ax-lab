@@ -2,7 +2,7 @@
 
 ## 1. 목적과 현재 경계
 
-이 저장소는 코딩 에이전트의 변경을 사람이 검토할 수 있는 증거로 연결한다. **현재 실행되는 것은 Python 로컬 데모와 문서 CI다.** Rust adapter, Nebius worker, 보호 평가 환경은 설계 단계다. 폴더나 MD가 생겼다는 이유로 실행 환경이 갖춰졌다고 판단하지 않는다.
+이 저장소는 코딩 에이전트의 변경을 사람이 검토할 수 있는 증거로 연결한다. **Python 데모·문서 CI와 AWS 무변경 Rust CPU smoke를 실행했다.** 후속 로컬 Docker amd64/Rosetta에서는 double-buffering SDK 3개·18 case·46,080개 값 비교와 helper 2개가 통과했고, 공개 오류 대조군을 예상한 assertion으로 검출했다. fmt·표적 Clippy도 통과했다. Nebius CI·보호 평가 환경·A/B·NPU 검사는 남아 있다. [실행 결과](../kernels/double-buffering.md#8-로컬-docker-실행-결과)
 
 운영자는 요구·수정 범위·검사·예산을 정한다. 에이전트는 원인을 조사하고 후보를 수정한다. 실행기는 고정된 검사로 결과를 기록하고, 사람은 변경의 의미와 남은 위험을 판단한다. 새로운 agent engine이나 지식 그래프 서버는 이 경로에 필요하지 않다.
 
@@ -14,6 +14,7 @@
 | 원격 CPU 검사를 어떻게 만들고 회수할 것인가? | [02 — 원격 실행 환경](02-REMOTE-EXECUTION.md) | 스펙·권한·실행 순서·중단/회수 조건 |
 | 무엇을 비교하는 실험인가? | [실험 계약](../experiment.md) | 검사 병렬도 보정과 에이전트 작업 절차 비교의 조건·지표·재제출·최종 검사 순서 |
 | 통과한 검사로 어디까지 판단하는가? | [품질 계약](../quality.md), [병합 절차](../merge.md) | 품질 검사·채택 절차, PR revision, 사람의 채택·병합 |
+| double-buffering에서 무엇을 보존하고 검사하는가? | [커널 계약](../kernels/double-buffering.md) | 입력·수치·데이터 이동·공개 실패 가설·테스트 한정 범위 |
 | 왜 이런 구조를 골랐는가? | [판단 컨텍스트](../context.md), [원문 구조 대장](../../references/source-layouts.md) | 선택 이유·대안·고정 원문·적용 범위 |
 
 전부 읽는 체크리스트가 아니다. 작업 경로와 해당 검사의 의미가 확인되면 실제 파일로 이동한다.
@@ -36,21 +37,25 @@ compiler-ax-lab/
 │   ├── architecture/
 │   │   ├── 00-OVERVIEW.md            구조·소유권·읽기 경로
 │   │   ├── 01-LOCAL-TRIAL.md         구현된 실행기의 상세 계약
-│   │   └── 02-REMOTE-EXECUTION.md    원격 구현 명세; 미실행
+│   │   └── 02-REMOTE-EXECUTION.md    AWS smoke 결과와 후속 원격 명세
 │   ├── experiment.md                실험 방법·환경 선택의 정본
 │   ├── quality.md                   Rust 수정 범위·검사 기준의 정본
+│   ├── kernels/double-buffering.md  첫 커널 과제의 입력·데이터 이동·검사 계약
 │   ├── merge.md                     검토·통합·병합 조건의 정본
 │   ├── context.md                   의사결정과 과거 맥락의 경계
 │   └── sources.md                   1차 출처·읽은 범위
 ├── references/source-layouts.md     외부 사례의 구조와 채택 이유
 ├── scripts/{trial.py,check.mjs}      데모 실행 / 문서 검사
 ├── examples/group-reduction/        공개 seed와 고정 checker
+├── examples/furiosa-double-buffering/
+│   ├── tests/                       SDK 테스트와 독립 정수 oracle
+│   └── controls/reuse-first-trf.patch  공개 개발용 오류 주입; CPU에서 검출
 ├── tests/test_trial.py              실행기 회귀 검사
 ├── .github/
 │   ├── workflows/quality.yml        현재 GitHub-hosted CI
 │   ├── pull_request_template.md     revision·검사·검토 인계
 │   └── CODEOWNERS                   소유자 지정; 독립 리뷰 보장은 아님
-└── report/                          앞선 시행도와 산술·렌더 검사
+└── report/                          실험 시행도·작업 분기와 산술·렌더 검사
 ```
 
 `.local/`은 Git에서 제외한 로컬 자료·실행 기록의 위치다. run별 실제 파일 구성은 [program.md의 기록 절차](../../program.md#5-기록에서-검토까지-연결한다)를 따른다. 비공개 경로 표기나 `.gitignore`는 접근 통제가 아니다. 보호 평가 자료는 후보 코드와 별도 권한으로 관리해야 한다.
@@ -92,7 +97,7 @@ MD는 에이전트가 읽는 작업 지침이다. 파일 접근 제한, 비용 �
 ## 5. 문서와 프롬프트를 바꾸는 절차
 
 1. **대상을 고른다.** 변경할 구성요소, 현재 상태, 그 문서를 읽을 운영자/후보를 먼저 적는다.
-2. **계약을 찾는다.** 실험 방법은 `experiment.md`, 품질 기준은 `quality.md`, 데모 행동은 `program.md`를 수정한다. 상세 문서에서 다른 기본값이나 판정 기준을 만들지 않는다.
+2. **계약을 찾는다.** 실험 방법은 `experiment.md`, 공통 품질 기준은 `quality.md`, 커널 입력·수치·데이터 이동은 `kernels/double-buffering.md`, 데모 행동은 `program.md`를 수정한다. 진입점과 그림은 정본으로 연결하며 다른 기본값이나 판정 기준을 만들지 않는다.
 3. **원인과 개입을 연결한다.** 목적·입력/출력·소유 파일을 먼저 쓰고, 실제 수행 순서는 번호로 적는다. 각 절차에는 관측할 파일/필드와 다음 행동을 결정할 조건을 둔다.
 4. **구현과 계획을 구분한다.** 존재하는 함수와 명령에는 코드 링크를 붙인다. 예정 경로·승인 전 값은 명시적으로 표시하고, 아직 없는 파일을 빈 구현체로 만들지 않는다.
 5. **검사와 인계를 남긴다.** 아래 명령을 실행하고 문서만 읽은 검토자가 수정 위치·중단 조건·완료 근거를 찾는지 확인한다. 새 architecture 문서는 이 인덱스와 공개 allowlist에 함께 등록한다. 자동 검사는 링크의 파일 경로를 확인하므로 절 anchor와 코드의 `#L` 위치는 실제 제목·함수 행을 따로 대조한다.
@@ -102,13 +107,13 @@ node scripts/check.mjs
 python3 -m unittest discover -s tests -v
 ```
 
-첫 명령은 링크·공개 파일·architecture 인덱스를 검사한다. 두 번째는 로컬 데모 회귀를 검사한다. 원격 명세나 실제 Rust 실행을 검증한 결과는 아니다. 기존 HTML 시행도는 앞선 그림으로 유지하며, 환경·CI의 최신 계약은 위 MD를 따른다.
+첫 명령은 링크·공개 파일·architecture/커널 읽기 경로를 검사한다. 두 번째는 로컬 데모 회귀를 검사한다. 원격 명세나 실제 Rust 실행을 검증한 결과는 아니다. HTML 시행도는 위 정본의 준비·권한·종료 분기를 요약하며 수정하면 PNG도 다시 렌더링해 확인한다.
 
 ## 6. 다음 구현의 순서
 
 1. 로컬 상세 명세의 저장 증거 재검증·종료 코드 회귀를 유지한다. 데모의 검사 통과를 원격 증거 검증 완료로 확대하지 않는다.
-2. 정상 baseline 통과와 테스트 보강 완료를 구별하는 Rust 검사 연결을 만든다.
-3. 승인된 원격 smoke에서 실제 toolchain 호환성과 취소·회수를 확인한다.
+2. 완료한 로컬 Docker 결과에서 정상 SDK·helper·오류 대조군과 소스/바이너리 연결을 각각 검토한다. 알려진 공개 오류 하나의 검출을 보호 평가나 미지의 결함 검출률로 확대하지 않는다.
+3. 후속 원격 검사에는 이번 Cargo 명령·기록·수거 경로를 재사용한다. 새 환경의 비용·시간·회수 조건과 필요한 실제 검사를 별도로 고정한다.
 4. 공개 PR 검사 연결과 보호 평가 접근 검사를 완료한 뒤 검사 병렬도 보정과 에이전트 작업 절차 비교를 별도로 승인받는다.
 
 새 탐색 요인·다중 후보·지식 그래프는 에이전트 작업 절차 비교에서 확인한 병목이 필요성을 만들 때 추가한다. 상세 승인 조건은 [원격 명세](02-REMOTE-EXECUTION.md), 비교의 종료 조건은 [실험 계약](../experiment.md)에 둔다.

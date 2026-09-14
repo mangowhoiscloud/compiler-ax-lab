@@ -4,6 +4,8 @@
 
 파일 트리는 전체 목록이 아니라 관련 경로의 발췌입니다. `{a,b}`는 실제로 존재하는 같은 계층의 파일을 줄여 쓴 표기입니다. 실행 중 생성되는 파일은 추적된 소스와 따로 표시했습니다. 원문·전사·코드는 이 저장소에 복제하지 않고 출처로 연결합니다.
 
+현재 모델 환경의 사례 우선순위와 효과 판단은 [2026 프론티어 사례](frontier-engineering-2026.md)를 먼저 읽습니다. 이 문서의 오래된 연구·소스 날짜는 구조의 이력이며 현재 모델의 성능 근거가 아닙니다.
+
 ## 1. autoresearch: 수정 대상은 작게, 판정 조건은 고정
 
 고정 revision: `228791fb499afffb54b46200aca536f79142f117` · [소스 트리](https://github.com/karpathy/autoresearch/tree/228791fb499afffb54b46200aca536f79142f117)
@@ -72,6 +74,8 @@ dioxus/
 
 ## 3. AlphaEvolve: 생성·평가·보관을 나누되 공개 범위를 구분한다
 
+2026년 적용은 [Magellan·JetBrains와 현재 서비스 문서](frontier-engineering-2026.md#2-alphaevolve-프로그램을-바꾸는-주체와-채택하는-주체가-다르다)로 보완합니다. 원전의 모델 구성·성과를 최신 결과로 다시 표기하지 않습니다. 탐색용 soft score와 최종 필수 검사·사람의 채택을 구분합니다.
+
 [원논문 v1, 2025-06-16](https://arxiv.org/html/2506.13131v1)과 [DeepMind 소개, 2025-05-14](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/)는 초기 프로그램, 후보 생성, 평가, 프로그램 저장소, 다음 후보의 선택을 분리합니다. 저렴한 검사에서 후보를 먼저 거르고 비싼 평가로 진행하며, 여러 지표와 과거 프로그램을 탐색에 사용합니다. 이는 저자들이 보고한 시스템이며 이 저장소의 실행 결과가 아닙니다.
 
 ### 3.1 Google Cloud 공개 client와 예제
@@ -130,6 +134,8 @@ alphaevolve_repository_of_problems/
 
 고정 revision: `c417a3a13f40867b649c719c03daaf1b39a909bc` · 커밋: 2026-02-11 · [소스 트리](https://github.com/google-research/circuit_training/tree/c417a3a13f40867b649c719c03daaf1b39a909bc)
 
+이 commit은 주석 오탈자 수정입니다. 2026년 모델 개선의 증거로 사용하지 않습니다. [실제 diff](https://github.com/google-research/circuit_training/commit/c417a3a13f40867b649c719c03daaf1b39a909bc). 상태·행동·보상과 후속 TCAD 평가는 [상세 비교](frontier-engineering-2026.md#4-alphachip-llm-코딩이-아니라-제약된-macro-배치의-rl이다)에 둡니다. EDA 평가도 PlaceOpt·postRouteOpt 등 실제 측정 단계로 표시하며 제조 sign-off와 합치지 않습니다.
+
 ```text
 circuit_training/
 ├── circuit_training/environment/{environment,plc_client}.py
@@ -172,6 +178,29 @@ circuit_training/
 **기록에 가져올 판단.** 후보의 성공 여부만 남기지 않고, 어떤 입력에서 어떤 가정이 깨졌으며 다음 변경이 그 원인을 어떻게 다루는지 남깁니다. 최종 patch에서 사라지는 폐기 사유도 재현 가능한 입력과 함께 보존합니다.
 
 **그대로 가져오지 않을 것.** 수학적 탐색을 컴파일러 정확성의 증명으로 대체하지 않습니다. 공개 토론을 실행 가능한 agent 시스템이나 실제 해결 성과로 포장하지 않습니다. 이 사례는 가설과 반증을 기록하는 태도의 참고이며, 코드 판정은 테스트·오라클·검토자가 맡습니다.
+
+## 6. Furiosa: 커널 설계와 검증 문서를 작업별로 연결한다
+
+고정 revision은 `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`다. 이 판본의 `furiosa-opt`에는 루트 `AGENTS.md`가 없으며, 커널 작성 skill과 mdBook quick-start가 작업을 안내한다. 별도 `torch-fx-rs`의 AGENTS를 이 저장소의 지침으로 합치지 않는다.
+
+```text
+furiosa-opt/
+├── README.md
+├── skills/furiosa-opt-kernel-authoring/SKILL.md
+├── docs/src/SUMMARY.md
+├── docs/src/quick-start.md
+├── docs/src/quick-start/{kernel-design,kernel-validation}.md
+├── furiosa-opt-examples/src/{mnist,transformer}/README.md
+├── furiosa-opt-rt/README.md
+├── furiosa-opt-rt/DESIGN.md
+└── furiosa-opt-rt/{abi,bootloader}/README.md
+```
+
+1. **필요한 작업에서만 상세 계약을 읽는다.** [커널 작성 skill](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/skills/furiosa-opt-kernel-authoring/SKILL.md)은 환경·판본 확인 뒤 패턴, host 기대값, 경계 사례와 검증으로 연결한다. [quick-start](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/docs/src/quick-start.md)는 설정·텐서·설계·검증을 나눈다. 이 lab은 기존 운영 skill에 읽기·테스트·구현·판정 기준 변경 분기만 추가했다. 첫 테스트 보강에 모든 커널 작성 명령을 강제하지 않는다.
+2. **데이터 이동을 코드보다 먼저 설명한다.** [Kernel Design](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/docs/src/quick-start/kernel-design.md)은 Goal → 데이터 이동 → device source → host program으로 전개한다. 소스를 include하는 문서도 있으며 코드 블록의 존재가 실행 성공을 뜻하지는 않는다. [로컬 커널 계약](../docs/kernels/double-buffering.md)은 이 순서로 세 구현이 보존할 연산과 서로 다른 이동·반복 구조를 연결한다.
+3. **검사의 의미는 한 곳에서 정의한다.** [Kernel Validation](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/docs/src/quick-start/kernel-validation.md)은 CPU 수치 검사·compile·정적 schedule·장치 검증의 질문을 구분한다. [runtime 설계](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-opt-rt/DESIGN.md)는 구조·수명주기·용어·신뢰 경계를 정리한다. 이 lab도 공통 검사 의미는 품질 계약, 대상별 입력·수치는 커널 문서, 자원 권한은 원격 명세로 나눠 중복 기본값을 피한다.
+
+Dioxus는 넓은 저장소에서 **어느 구성요소와 상태를 읽을지**, Furiosa는 **해당 커널을 무엇으로 설명하고 확인할지**를 안내한다. 두 구조를 조합하되 외부 MD를 실행 권한이나 실제 통과 근거로 취급하지 않는다. 위 트리는 필요한 경로의 발췌이며 내부 production compiler의 전체 구성도가 아니다.
 
 ## 이 실험에 적용하는 공통 기준
 

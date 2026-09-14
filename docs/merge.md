@@ -2,7 +2,7 @@
 
 ## 현재 구현과 제안의 경계
 
-이 lab에는 [PR 템플릿](../.github/pull_request_template.md), [CI](../.github/workflows/quality.yml), [CODEOWNERS](../.github/CODEOWNERS)가 있습니다. CI는 문서·공개 파일·산술과 로컬 변경 루프 실행기의 회귀 검사를 수행합니다. 실제 Rust·NPU 검사는 아직 실행하지 않았으며 이 CI가 대신하지 않습니다.
+이 lab에는 [PR 템플릿](../.github/pull_request_template.md), [CI](../.github/workflows/quality.yml), [CODEOWNERS](../.github/CODEOWNERS)가 있습니다. CI는 문서·공개 파일·산술과 로컬 변경 루프 실행기의 회귀 검사를 수행합니다. AWS 무변경 Rust CPU smoke와 로컬 Docker의 [double-buffering 정상 SDK 검사·공개 오류 대조군 검출](kernels/double-buffering.md#8-로컬-docker-실행-결과)은 별도로 완료했습니다. NPU 검사·전체 Rust workspace 검사·이 변경의 원격 PR CI·사람 채택은 아직 확인하지 않았으며 로컬 결과가 대신하지 않습니다.
 
 이 개인 연구의 이전 설계에는 head/base/통합 revision → 재검사 → 사람 병합 → post-merge CI → 별도 릴리스라는 도식이 있었지만 실제 PR 템플릿·원격 저장소·workflow는 없었습니다. 이번에는 같은 절차를 lab 운영에 연결합니다. Furiosa upstream에 PR을 올리는 일은 별도 승인입니다.
 

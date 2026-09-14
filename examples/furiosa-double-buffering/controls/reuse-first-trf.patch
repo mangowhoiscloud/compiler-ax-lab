@@ -1,0 +1,12 @@
+diff --git a/furiosa-opt-examples/src/double_buffering/software_pipelined_kernel.rs b/furiosa-opt-examples/src/double_buffering/software_pipelined_kernel.rs
+--- a/furiosa-opt-examples/src/double_buffering/software_pipelined_kernel.rs
++++ b/furiosa-opt-examples/src/double_buffering/software_pipelined_kernel.rs
+@@ -50,7 +50,7 @@ pub fn software_pipelined(
+             .begin(activation.view())
+             .fetch::<m![Red / 16], m![Red % 16]>()
+             .collect::<m![Red / 16], m![Red % 16]>()
+-            .contract_outer::<m![Red / 32], m![Red % 32], _, _, _>(&second_trf)
++            .contract_outer::<m![Red / 32], m![Red % 32], _, _, _>(&first_trf)
+             .contract_packet::<m![1]>()
+             .contract_time::<m![1]>()
+             .contract_lane::<m![1], m![Out]>(LaneMode::Interleaved)

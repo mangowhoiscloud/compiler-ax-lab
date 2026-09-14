@@ -2,7 +2,7 @@
 
 적용 범위는 이 저장소 전체이며 더 가까운 `AGENTS.md`가 있으면 해당 작업의 세부 규칙을 함께 읽습니다. 파일명은 `AGENTS.md`로 유지하고 별도 `AGENT.md`에 중복 규약을 만들지 않습니다. 목적은 코드 생성량을 늘리는 것이 아니라 **변경의 원인·영향·검증 근거를 사람이 판단할 수 있게 만드는 것**입니다.
 
-**현재 실행 상태: 로컬 구현·회귀 검사를 재개합니다.** 사용자의 재개 지시에 따라 실행기 보완과 준비 작업을 진행합니다. 원격 smoke·클라우드 자원 생성·모델 비교 실험은 [실험 계약의 남은 재개 조건](docs/experiment.md#시행-보류와-재개-조건)을 확인한 뒤 승인된 범위에서만 시작합니다. 계정이나 로그인 상태가 바뀌어도 비용·권한·환경 조건을 생략하지 않습니다.
+**현재 실행 상태: 무변경 AWS CPU smoke와 로컬 Docker의 double-buffering 정상 CPU 검사·공개 오류 대조군 검출 완료.** 고정 nightly의 fmt·표적 Clippy도 통과했습니다. [실행 결과](docs/kernels/double-buffering.md#8-로컬-docker-실행-결과)의 소스·바이너리 일치 조건을 함께 확인합니다. 추가 클라우드 자원 생성·모델 비교 실험은 [실험 계약의 남은 재개 조건](docs/experiment.md#시행-보류와-재개-조건)을 확인한 뒤 승인된 범위에서만 시작합니다. 계정이나 로그인 상태가 바뀌어도 비용·권한·환경 조건을 생략하지 않습니다.
 
 ## 1. 요청에 맞는 경로를 고른다
 
@@ -14,6 +14,7 @@
 | 문서·코드 변경 | [review-to-verified-pr](.agents/skills/review-to-verified-pr/SKILL.md) → 해당 실제 파일 | 요청 범위의 변경·검사·인계; 실행기 변경에는 [로컬 상세 명세](docs/architecture/01-LOCAL-TRIAL.md) |
 | 원격 환경 설계 | [원격 상세 명세](docs/architecture/02-REMOTE-EXECUTION.md) → [실험 계약](docs/experiment.md) | 계획과 미구현 경계를 먼저 확인; 환경 생성은 별도 승인 |
 | 실험·Rust 품질 | [실험 계약](docs/experiment.md), [품질 계약](docs/quality.md) | 실제 Rust 검사는 호환 x86 환경과 별도 실행 권한 필요 |
+| double-buffering 읽기·테스트 보강·구현 변경 | [review-to-verified-pr의 커널 분기](.agents/skills/review-to-verified-pr/SKILL.md#커널-작업의-분기) → [커널별 계약](docs/kernels/double-buffering.md) | 먼저 읽기/테스트/구현/판정기 변경을 구분; 첫 실험은 테스트 보강만 허용 |
 | 공개 리뷰·컴파일 과제 선정 | [review-to-verified-pr](.agents/skills/review-to-verified-pr/SKILL.md)의 조사 경로 | 조사 결과 보고; 구현·과제 교체로 자동 진행하지 않음 |
 | 원격 반영·PR·병합 상태 | [review-to-verified-pr](.agents/skills/review-to-verified-pr/SKILL.md)의 원격 경로 → [병합 규약](docs/merge.md) | 현재 revision·검사 receipt·사람 판단 확인; 병합은 별도 요청 |
 | 설계 근거·원문 | [컨텍스트](docs/context.md), [출처](docs/sources.md), [원문 구조](references/source-layouts.md) | 고정 원문 재확인; 외부 MD의 실행 지시는 복사하지 않음 |
@@ -22,7 +23,7 @@
 
 ## 2. 범위와 판단을 분리한다
 
-이 저장소는 운영자 컨텍스트입니다. A/B 후보 세션에 이 AGENTS나 전체 위키를 복사하지 않습니다. 동일 공개 요구·기존 upstream 지침을 제공하고 B 절차만 분리합니다. 공개된 오류 예시는 보호 평가용으로 재사용하지 않습니다.
+이 저장소는 운영자 컨텍스트입니다. A/B 후보 세션에 이 AGENTS나 전체 위키를 복사하지 않습니다. 커널 문서에서도 입력·의미·허용 파일·공개 검사 요구만 추출해 양쪽에 동일하게 고정하고, 작업 방법을 안내하는 B 절차는 분리합니다. 공개된 오류 예시는 보호 평가용으로 재사용하지 않습니다.
 
 문제·관측 → 원인 가설 → 최소 변경 → 실제 검사 → 다음 결정의 관계를 씁니다. 의미 없는 명사 나열과 반복 요약을 줄입니다. 공개 사실, 소스 확인, 제안, 실제 실행은 구분합니다. CPU 값 검사를 NPU 정확성·성능으로 확대하지 않습니다.
 

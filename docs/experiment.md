@@ -1,6 +1,8 @@
 # 실험 계약: 자원 효과와 작업 절차 효과를 분리한다
 
-상태: **구현 전 절차 정리, CPU·클라우드·모델 실험 미실행**. 이 문서가 2026-09-14 Nebius CI·종료 절차를 포함한 현재 계획입니다. [기존 시행도](../report/assets/compiler-ax-experiment-approval.html)는 앞선 설계의 그림이며 이번 환경·CI 개정은 아직 반영하지 않았습니다. 검사별 기준은 [품질 계약](quality.md)을 따릅니다.
+상태: **2026-09-14 AWS 무변경 Rust CPU smoke·수거·자원 삭제 완료.** 모델 A/B·검사 병렬도 비교·NPU·Nebius CI는 미실행입니다. 이 문서는 실제 준비 검사와 후속 계획을 구분합니다. [시행도](../report/assets/compiler-ax-experiment-approval.html#execution)는 후속 설계의 준비·권한·검사 후 조치와 회수 조건을 요약합니다. 공통 검사 기준은 [품질 계약](quality.md), 첫 과제의 입력·수치·데이터 이동은 [커널 계약](kernels/double-buffering.md)에 둡니다.
+
+후속 공개 단일 변경으로 double-buffering 테스트·독립 oracle·오류 주입 patch를 작성했습니다. 2026-09-15 KST 로컬 Docker amd64/Rosetta에서 정상 SDK 3개·18 case·46,080개 값 비교와 helper 2개가 통과했고, 별도 오류 checkout은 컴파일 후 예상한 수치 assertion으로 실패했습니다. fmt·표적 Clippy도 통과했습니다. 이 작업은 아래 A/B 실험의 어느 arm에도 배정하지 않습니다. 공개 입력과 이미 본 오류 patch는 보호 최종 평가로 재사용하지 않습니다. [실행 조건과 원문 판정](kernels/double-buffering.md#8-로컬-docker-실행-결과)
 
 구현 파일과 상세 스펙은 [architecture 인덱스](architecture/00-OVERVIEW.md)에서 읽습니다. [원격 명세](architecture/02-REMOTE-EXECUTION.md)는 아래 실험 방법을 바꾸지 않고, 실행 주체·데이터 접근·필드·실패와 회수 절차를 구체화합니다.
 
@@ -10,7 +12,7 @@
 
 1. 사용자의 명시적 재개 지시를 확인합니다. 이번 로컬 구현 재개는 확인됐으며, 로그인·계정 변경만으로 추가 실행 범위를 넓히지 않습니다. 개인 계정 사정은 공개 문서에 남기지 않습니다.
 2. 재개 환경에서 실제 model ID·effort·이용 가능 범위·사용량 관측 수단을 다시 확인합니다. 이전 세션의 한도·권한·설정을 승계하지 않으며, A/B에는 같은 공개 조건과 실행 한도를 적용합니다. 비교 중 계정·모델·사용 한도처럼 비교에 영향을 주는 조건이 바뀌면 중단하고, 변경 전후 결과를 같은 비교로 합치지 않습니다.
-3. 아래 환경 값, [입력·수치 계약](quality.md#입력과-수치-계약), [판정 단위](#결함-검출의-판정-단위), 공개 검사 세 개·보호 평가 준비·담당자·모든 상한을 확정합니다. 비어 있는 값은 실행 전 확인 항목으로 남깁니다.
+3. 실행할 단계의 조건을 확정합니다. 무변경 `binary_add` smoke에는 host·toolchain/native artifact·기존 명령·기대 실행 수·담당자·시간/비용·회수 조건이 필요합니다. double-buffering 검사에는 [입력·수치 계약](kernels/double-buffering.md)과 대조군을 추가로 확정합니다. 검사 병렬도 보정·A/B 비교 전에는 공개 검사 세 개, [판정 단위](#결함-검출의-판정-단위), 보호 평가·접근 검증, 모델 조건과 모든 상한을 확정합니다. 후속 단계의 준비를 smoke의 선행 조건으로 소급하지 않습니다.
 4. 실행기 보완과 Rust 연결 상태를 확인한 뒤, 허가된 범위의 무변경 CPU smoke부터 시작합니다. smoke와 비교 실험의 승인은 구분합니다.
 
 ## 구현하는 목적과 완성 조건
@@ -23,13 +25,42 @@
 
 ## 작업과 환경
 
+2026-09-14 후속 승인에 따라 첫 무변경 CPU smoke를 AWS 서울의 `m7i.large` 1대(2 vCPU·8 GiB), 암호화된 20 GiB gp3에서 완료했습니다. 승인 상한은 최대 2시간·예산 1 USD였으며, Ubuntu 24.04 x86-64의 고정 AMI와 build jobs=1을 사용했습니다. [관측성·기록 규약](quality.md#cpu-smoke의-관측성과-기록-규격)에 따라 수거 뒤 새 instance·disk·보안그룹·키페어의 종료/삭제를 재조회했고 기존 서버는 유지했습니다. 계정·AMI·자원 ID와 API 원문은 비공개 실행 기록에 있습니다.
+
+[Token Factory Sandboxes beta](token-factory-sandbox.md)는 신청 접수 후 실행 권한 승인을 기다립니다. 아래 Nebius AI Cloud·컨테이너·main CI는 후속 설계로 남깁니다. 이번에는 운영자의 로컬 AWS CLI/SSH와 일회성 VM에서 변경 없는 공개 코드를 검사하며, 후보 격리·본 비교·상시 CI의 검증으로 해석하지 않습니다. 본 실험의 과제·판정·보호 평가 조건은 바꾸지 않습니다.
+
 고정 대상은 `furiosa-opt` 0.8.1, commit `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`, Rust `nightly-2026-05-01`입니다. 첫 과제는 double-buffering의 세 구현에서 그룹별 출력·경계를 확인하는 테스트 보강입니다. 실제 제품 결함을 발견한 상태는 아닙니다.
+
+[커널 문서](kernels/double-buffering.md)는 운영자의 준비·조사 경로도 담습니다. 후보에게는 이 문서 전체가 아니라 입력·의미·허용 파일·공개 검사 요구를 추출해 같은 판본으로 제공합니다. 세 구현의 본체·mapping·schedule 또는 독립 판정 기준을 수정해야 한다면 첫 과제의 조건이 바뀌므로 작업을 멈추고 범위를 다시 확정합니다. 이 분기와 공통 계약이 B에만 유리한 정보 차이가 되지 않도록 A/B 공개 입력 목록을 함께 고정합니다.
 
 초기 후보는 Nebius AI Cloud의 `cpu-d3`, `8vcpu-32gb` x86-64 VM 한 대로, 8 vCPU·32 GiB RAM 구성입니다. 이는 실제 할당이나 공급사 최소 요구, 충분성을 입증한 측정값이 아닌 계획입니다. 고정 upstream Dockerfile에 맞춰 Ubuntu 24.04 host와 digest를 고정한 Ubuntu 24.04 amd64 빌드 컨테이너를 선택합니다. 이전 22.04 컨테이너안은 최소 지원 OS를 필수 OS로 고정할 이유가 없어 대체합니다. 컨테이너는 host kernel을 공유하며, Dockerfile만으로 배포 binary와 native library가 준비되지는 않습니다. 해당 artifact의 출처·버전·hash와 `x86_64-unknown-linux-gnu`·GLIBC 2.34 이상·고정 nightly의 실제 호환성을 smoke에서 확인합니다. 지역·image ID/digest·디스크 종류와 크기·작업별 자원은 승인 전에 확정합니다. Token Factory 이용권을 AI Cloud VM 이용권으로 가정하지 않습니다. [공식 자료](sources.md)
 
 고정 예제의 입력·출력 원자료는 논리적으로 27 KiB입니다. 중간 버퍼·복사·oracle·Rust 빌드 RSS는 포함하지 않습니다. 32 GiB는 텐서 크기에서 도출한 요구량이 아니며, 빌드와 검사 병렬도의 실제 최대 RSS·I/O를 확인할 선정안입니다. 정확한 축·dtype와 계산 범위는 [입력·수치 계약](quality.md#입력과-수치-계약)에 둡니다.
 
 키·결제·계정 상태는 공개 문서에 기록하지 않습니다. 실행 전 비용 상한, smoke/trial timeout, 작업별 CPU·RAM·디스크·출력 상한, 모델 사용량 상한과 중단 수단, 검사 담당자를 확정합니다. 준비 명령에도 한도가 필요합니다. 미확정이면 실행을 시작하지 않습니다.
+
+## 무변경 CPU smoke 실행 결과
+
+2026-09-14 run `20260914-h9bE3zWX`에서 위 source pin의 `test_binary_add_2048`를 변경 없이 검사했습니다. CPU는 Intel Xeon Platinum 8488C, host는 x86_64 Ubuntu 24.04.4·GLIBC 2.39입니다. `CARGO_BUILD_JOBS=1`, `RAYON_NUM_THREADS=2`, `RUST_TEST_THREADS=1`을 고정했고 NPU는 사용하지 않았습니다.
+
+| 관측 | 원문 결과 | 해석 범위 |
+|---|---|---|
+| 빌드 포함 테스트 목록 | 2 tests, exit 0; 경과 12분 53.32초 | 새 target에서 의존성과 examples library를 빌드한 시간입니다. 단일 커널 지연이 아닙니다. |
+| 지정 테스트 | 1 passed, 0 failed, 0 ignored, 1 filtered out; exit 0; 명령 경과 0.14초 | 기존 호스트 덧셈 oracle의 assertion 통과입니다. 앞선 빌드 cache를 재사용했고 Cargo 시작 시간이 포함됩니다. |
+| 빌드 최대 RSS | GNU time 4,064,600 KiB, 약 3.88 GiB | VM 전체 메모리 peak나 동시 프로세스 합이 아닙니다. |
+| 종료 전 디스크 | 루트 사용량 5,020,807,168 bytes; target 1,064,914,944 bytes | 두 값은 합산하지 않습니다. 단일 종료 시점 관측이며 disk peak가 아닙니다. |
+| 증거·회수 | 원격 파일 94개, 53,203,885 bytes 전부 크기·SHA-256 일치; PTY 2개 별도 보존; 생성 자원 삭제 재조회 | 원격 필수 묶음의 전송 누락은 없었습니다. VM/디스크는 삭제됐지만 수거한 원문은 로컬에 보존했습니다. |
+
+정확한 명령은 다음과 같습니다. 성공 입력 배열 전체는 upstream이 출력하지 않아 `NOT_EMITTED`입니다. seed 42, 입력 각각 `[2048]` i8·출력 `[2048]` i32, 고정 test/kernel 소스와 Cargo.lock을 함께 보존했습니다.
+
+```bash
+cargo +nightly-2026-05-01 test --locked --color never -p furiosa-opt-examples --release --test binary_add_tests -- --list --color never
+cargo +nightly-2026-05-01 test --locked --color never -p furiosa-opt-examples --release --test binary_add_tests -- --exact test_binary_add_2048 --test-threads=1 --format pretty --color never
+```
+
+기록 형식은 `compiler-ax-cpu-smoke/v1`입니다. 계약 JSON, 단계별 원문·TSV·자원 표본, 원격 산출물 manifest, controller/PTY manifest, CPU 판정과 자원 회수 receipt를 분리했습니다. 원본은 Git 제외 비공개 `.local/aws-cpu-smoke-20260914-h9bE3zWX/`에 있으며 공개 원문이나 독립 배포 receipt는 아직 없습니다. 로그 수집기의 정상·실패·timeout·pipe 지연 네 검사는 통과했지만, VM 강제 중단·OOM을 주입한 검사는 수행하지 않았습니다.
+
+이 결과로 **이 고정 CPU 준비 검사는 2 vCPU·8 GiB·20 GiB에서 실행 가능했다**고 말할 수 있습니다. 후속 double-buffering 테스트와 오류 대조군은 [별도 로컬 Docker 실행](kernels/double-buffering.md#8-로컬-docker-실행-결과)에서 확인했으며 AWS 결과에 합산하지 않습니다. 검사 병렬도 효과·에이전트 생산성·NPU lowering/성능은 남은 실험 대상입니다. 8 GiB를 모든 커널 빌드의 최소 요구량으로 일반화하지 않습니다.
 
 ## 처음부터 종료까지의 순서
 
@@ -70,7 +101,7 @@
 
 이 문서와 HTML이 공개한 경계 예시는 공개 개발용입니다. 독립 최종 확인에는 노출하지 않은 구체 입력·변이·판정 구현을 별도 권한으로 보관합니다. 이 운영 저장소의 `.gitignore`만으로 후보 접근이 차단되는 것은 아닙니다.
 
-독립 최종 검사는 공개 CI job과 별도 실행 환경에서 수행합니다. 후보 에이전트뿐 아니라 생성된 테스트 코드의 파일·네트워크 접근도 제한하고, 보호 원문·기대값·최종 판정기는 후보가 읽거나 수정할 수 없도록 둡니다. 공개 artifact에는 집계 판정과 snapshot 식별자만 남깁니다. 이 경계를 실제로 확인하지 못하면 공개 CPU smoke까지만 수행하고 에이전트 작업 절차 비교의 시작을 보류합니다.
+독립 최종 검사는 공개 CI job과 별도 실행 환경에서 수행합니다. 후보 세션과 생성된 테스트 코드의 파일·네트워크 접근을 제한해 보호 fixture 저장소·정답 파일·구현의 정상/오류 label·최종 판정기·다른 후보 결과를 노출하지 않습니다. 신뢰된 실행기가 필요한 입력 값만 고정 인터페이스로 테스트에 공급합니다. 실행 중 테스트가 처리하는 값까지 보이지 않는다고 가정하지 않으며, 구체적인 공급·검사 방식은 구현 전에 확정합니다. 개별 입력·로그·판정은 후보 생성 세션의 수정에 반환하지 않습니다. 공개 artifact에는 집계 판정과 snapshot 식별자만 남깁니다. 이 경계를 실제로 확인하지 못하면 공개 CPU smoke까지만 수행하고 에이전트 작업 절차 비교의 시작을 보류합니다.
 
 ## 검사 병렬도 보정
 
