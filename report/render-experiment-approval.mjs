@@ -22,7 +22,8 @@ try {
   const missingAnchors = await page.locator('a[href^="#"]').evaluateAll(links => links.filter(a => !document.getElementById(a.hash.slice(1))).map(a => a.hash));
   assert.deepEqual(missingAnchors, [], 'Broken local anchor');
   assert.deepEqual(await page.locator('[data-quality]').evaluateAll(rows => rows.map(row => row.dataset.quality)),
-    ['Q0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5'], 'Quality contract rows missing or reordered');
+    ['contract-environment', 'scope-code-quality', 'output-behavior', 'integration-docs', 'independent-final', 'human-adoption'],
+    'Quality contract rows missing or reordered');
   const figures = page.locator('.sheet > svg');
   assert.equal(await figures.count(), 3);
   for (let i = 0; i < 3; i++) {

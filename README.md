@@ -4,16 +4,20 @@
 
 공개 `furiosa-opt`의 Rust 예제를 대상으로 실험을 설계했습니다. FuriosaAI와 무관한 개인 연구이며, 내부 컴파일러·CI·승인 체계를 재현한 프로젝트가 아닙니다. **현재는 실험 설계와 로컬 변경 루프 데모 단계입니다. Rust 빌드, 클라우드 실험, NPU 측정은 아직 수행하지 않았습니다.**
 
+**로컬 구현·회귀 검사를 재개했습니다.** 원격·모델 비교 실험은 [남은 재개 조건](docs/experiment.md#시행-보류와-재개-조건)을 확인한 뒤 승인된 범위에서 진행합니다. [보고서와 실험의 대응](docs/context.md#보고서에서-이번-실험으로-옮긴-범위), [입력·수치 계약](docs/quality.md#입력과-수치-계약), [원격 환경·기록 명세](docs/architecture/02-REMOTE-EXECUTION.md)에 정렬 기준을 남겼습니다.
+
 ## 먼저 읽을 것
 
-1. [실험 계획](docs/experiment.md): E0 자원 보정, E1 업무 절차 비교, 별도 E2 확장.
-2. [품질 계약](docs/quality.md): 기존 컨벤션, 검사별 보장 범위, Q0–Q5.
-3. [시행도](report/assets/compiler-ax-experiment-approval.html): 로컬 브라우저로 열 수 있는 단일 HTML.
+전체 경로는 [Architecture 인덱스](docs/architecture/00-OVERVIEW.md)에서 고릅니다. 현재 폴더 트리, 구성요소별 책임, 로컬 실행기의 스펙과 계획된 원격 환경을 나눠 설명합니다.
+
+1. [실험 계획](docs/experiment.md): 검사 병렬도 보정, 에이전트 작업 절차 비교, 별도 후속 단일 요인 비교.
+2. [품질 계약](docs/quality.md): 기존 컨벤션, 검사별 보장 범위, 품질 검사·채택 절차.
+3. [기존 시행도](report/assets/compiler-ax-experiment-approval.html): 로컬 브라우저로 열 수 있는 단일 HTML. 최신 Nebius CI·종료 절차는 실험 계획을 따릅니다.
 4. [PR·병합 절차](docs/merge.md): 검사한 revision, 사람 판단, 병합 후 확인.
-5. [판단 컨텍스트](docs/context.md)와 [1차 출처](docs/sources.md): 채택 이유와 읽은 범위.
+5. [판단 컨텍스트](docs/context.md)와 [1차 출처](docs/sources.md): 채택 이유와 읽은 범위. skill·링크형 wiki 선택과 KG 엔진 보류 이유도 기록합니다.
 6. [원문 사례의 폴더 구조](references/source-layouts.md): 고정 commit의 실제 경로와 공개 범위.
 
-![최종 실험 시행도](report/assets/compiler-ax-experiment-approval-3.png)
+![기존 실험 시행도: 최신 환경·CI 개정은 MD 참조](report/assets/compiler-ax-experiment-approval-3.png)
 
 ## 지금 재현할 수 있는 검사
 
@@ -36,19 +40,7 @@ node report/render-experiment-approval.mjs
 
 ## MD가 작업을 안내하고 스크립트가 상태를 결정한다
 
-```text
-compiler-ax-lab/
-├── .agents/skills/run-bounded-change-loop/SKILL.md  작업 진입점
-├── program.md                                    실행 규율의 정본
-├── scripts/trial.py                              초기화·검사·상태 조회
-├── examples/group-reduction/
-│   ├── candidate.py                              의도 결함이 있는 공개 seed
-│   └── check.py                                  별도 기대값으로 출력 비교
-├── tests/test_trial.py                           판정기·중단 조건 회귀 검사
-├── references/source-layouts.md                  실제 원문 구조·채택 근거
-├── docs/                                         실험·품질·사람 병합 계획
-└── .local/trials/                                실행 시 생성; 비공개 기록
-```
+[현재 폴더·책임 지도](docs/architecture/00-OVERVIEW.md#3-현재-폴더와-책임)와 [로컬 실행기 상세 명세](docs/architecture/01-LOCAL-TRIAL.md)는 실제 파일·함수·CLI 한도·기록 필드를 연결합니다. [원격 명세](docs/architecture/02-REMOTE-EXECUTION.md)는 구현 전 스펙·권한·회수 절차를 별도로 정의합니다.
 
 [스킬](.agents/skills/run-bounded-change-loop/SKILL.md)은 [program.md](program.md)를 읽어 실행합니다. 에이전트가 baseline의 실제 차이를 진단하고 후보 하나를 수정하면, 실행기가 고정 검사기·유한 시도·시간 상한 아래에서 다시 검사합니다. 결과는 `REVISE`, `READY_FOR_REVIEW`, `STOP`으로 다음 행동을 제한합니다. 모델 호출이나 자동 패치 생성기는 추가하지 않았습니다. 기존 코딩 에이전트가 진단과 구현을 맡습니다.
 

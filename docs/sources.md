@@ -6,16 +6,20 @@ MD 지침과 실행·평가 코드를 분리한 사례의 실제 경로와 판�
 
 ## Furiosa: 기존 규칙을 출발점으로 고정
 
-공개 `furiosa-ai/furiosa-opt` main은 `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`, release 0.8.1이다. 이번 파일럿의 기존 pin과 같다. 다음은 해당 commit의 직접 확인 범위다. `[실측: 소스]`는 명령 실행 성공을 뜻하지 않는다.
+이번 확인 대상은 공개 `furiosa-ai/furiosa-opt`의 고정 commit `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`, release 0.8.1이다. 이후 이동하는 `main`을 자동으로 추종하지 않는다. 다음은 해당 commit의 직접 확인 범위다. `[실측: 소스]`는 명령 실행 성공을 뜻하지 않는다.
 
 | 원문 | 확인한 내용 | 설계에서 바뀌는 판단 |
 |---|---|---|
+| [README의 host·도구 요구](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/README.md#L23-L56) | 모든 backend의 지원 host는 `x86_64-unknown-linux-gnu`다. 배포 바이너리는 GLIBC 2.34 이상이 필요하고 Ubuntu 22.04는 최소 지원 버전이다. Ubuntu 24.04도 지원하며 nightly-2026-05-01과 driver ABI가 결합된다. `build-essential`·`libclang-dev`는 공통, AArch64 cross compiler는 NPU 빌드용이다. | `[설계]` CPU host와 NPU target을 구분한다. 22.04만 필수라고 해석하지 않으며, 문서에 없는 AVX 계열 요구나 실제 VM의 ISA 노출을 추정하지 않는다. |
+| [Dockerfile](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/Dockerfile) | `FROM ubuntu:24.04`이며 `dist`의 실행 바이너리·driver·native library를 복사하고 local prebuilt 경로를 지정한다. source만으로 완결되는 빌드 파일은 아니다. 기본 `ENTRYPOINT`는 `cargo furiosa-opt`다. | `[설계]` 24.04 amd64 빌드 컨테이너를 선택한다. host image·container digest와 `dist`의 출처·release/tag·target·전체 SHA-256을 고정한다. CPU smoke는 entrypoint를 명시적으로 바꿔 plain Cargo로 실행한다. 아직 빌드·실행하지 않았다. |
 | [Makefile](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/Makefile#L24-L67) | check/clippy는 workspace·all-targets, fmt는 check-only, test는 release다. `clippy-npu`, mdbook build/test가 별도다. | `[추론]` 기존 target을 재사용하고 검사와 수정, CPU와 NPU, 문서 렌더와 예제 실행을 분리한다. |
 | [build.yml](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/.github/workflows/build.yml) | Ubuntu 22.04, 고정 nightly, prebuilt 경로, check/fmt/clippy/machete/test 순서가 있다. | `[추론]` 내부 CI 표준으로 일반화하지 않는다. 첫 CPU 체크포인트에서 공개 검사 묶음을 확인한다. |
 | [rust-toolchain.toml](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/rust-toolchain.toml), [rustfmt.toml](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/rustfmt.toml), [clippy.toml](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/clippy.toml) | nightly-2026-05-01, rustfmt/clippy, max_width=120, allow-dbg-in-tests=true, too-many-lines-threshold=1150. | `[추론]` 임의의 80자·전역 pedantic·unwrap 금지 규칙을 덧씌우지 않는다. |
 | [Cargo.toml](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/Cargo.toml), [Cargo.lock](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/Cargo.lock) | 현재 workspace와 기대 cfg, 추적된 lockfile이 존재한다. `--all-features`는 공개 Makefile의 공통 명령이 아니다. | `[추론]` 지원 backend/feature를 명시하고 lockfile을 보존한다. `--locked` 추가는 파일럿의 재현 정책이며 기존 Makefile 옵션으로 쓰지 않는다. |
 | [prebuilt 다운로드](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/.github/actions/download-released-libraries/action.yml), [mapping build.rs](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-mapping/build.rs#L28-L75) | CI는 SHA256SUMS를 검사한다. build.rs의 LOCAL_PREBUILT 경로는 파일을 복사하며, 일반 다운로드는 checksum 확인과 선택적 attestation 경로가 있다. | `[추론]` 로컬 prebuilt를 쓰더라도 출처·tag·target·전체 SHA를 준비 담당자가 검증한다. checksum 일치를 출처 인증으로 부르지 않는다. |
-| [binary_add_tests.rs](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-opt-examples/tests/binary_add_tests.rs#L6-L28), [kernel-validation.md](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/docs/src/quick-start/kernel-validation.md) | 실제 `test_binary_add_2048`는 고정 seed와 별도 host 덧셈 결과를 비교한다. 검증 문서는 정적 compile, CPU 값, NPU 실행, schedule을 구분한다. | `[추론]` 이 검사를 무변경 smoke 후보로 쓴다. double-buffering용 새 테스트는 구현할 산출물이며 기존 실행 결과가 아니다. |
+| [binary_add_tests.rs](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-opt-examples/tests/binary_add_tests.rs#L6-L28), [kernel-validation.md](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/docs/src/quick-start/kernel-validation.md) | 실제 `test_binary_add_2048`는 고정 seed와 별도 host 덧셈 결과를 `assert_eq!`로 비교하며 성공한 값 전체를 출력하지 않는다. 검증 문서는 정적 compile, CPU 값, NPU 실행, schedule을 구분한다. | `[추론]` 무변경 smoke는 테스트 소스·hash와 libtest의 이름·실행 수·verdict·exit로 assertion 통과를 연결한다. 관측하지 않은 출력값은 만들지 않는다. double-buffering용 새 테스트는 아직 없다. |
+| [double_buffering.rs의 축](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-opt-examples/src/double_buffering.rs#L13), [rolled_kernel의 입출력](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-opt-examples/src/double_buffering/rolled_kernel.rs#L9), [cast.rs](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-opt-std/src/cast.rs#L385) | `Tok=16, Red=64, Out=8, Group=20, Pairs=10`. 세 변형의 activation·weight·output은 각각 `bf16`의 `[16,64]`, `[20,8,64]`, `[16,20,8]`이며 contraction 결과 형식은 `f32`다. | `[계산]` 논리 입출력 원자료는 2+20+5=27 KiB다. 빌드 메모리·host 복사본·oracle 메모리를 포함한 실측치가 아니다. 입력 값·seed·독립 기대값·허용 오차는 실행 전에 별도로 고정해야 한다. |
+| [runtime.rs](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-opt-std/src/runtime.rs#L225), [CPU backend](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-opt-std/src/backend/cpu.rs#L14) | 일반 Cargo 실행은 CPU에서 원래 함수 본문을 실행한다. CPU backend는 host buffer를 사용하며 NPU 실행과 경로가 다르다. | `[설계]` 이번 테스트 보강은 CPU 값과 오류 검출을 평가한다. 정적 kernel compile을 새 필수 후보 검사로 확대하거나 NPU 정확성·성능이 확인됐다고 쓰지 않는다. |
 
 과거 SWMAP의 0.4.0 workspace 수·backend 명칭은 날짜가 다른 기록이다. 이번 명령의 근거는 위 0.8.1 pin이다. 공개 driver stub을 내부 Compiler 소스로 해석하지 않는다.
 
@@ -49,13 +53,38 @@ CI 파일은 검사 의도를 입증하며, 실제 완료 run이나 branch prote
 
 이 기록은 2026-09-14 품질 기준 조사 범위다. 이후 이 lab 저장소에 추가한 문서 CI와 구분한다. Rust CI 실행, compiler checkout 변경, dependency 설치, cloud 호출, Furiosa upstream PR/병합은 수행하지 않았다. Miri·sanitizer·cargo-fuzz·보안 공급망 도구의 전면 도입은 첫 CPU 테스트 보강 과제의 선행 조건으로 두지 않는다. 해결할 위험과 실행 가능한 범위가 확인된 뒤 별도 검사로 추가한다.
 
+## 계획·실행·검토: 원논문의 방법과 이 실험의 선택
+
+2026-09-14에 보존된 강의 프레임·자동 자막을 원논문과 대조했다. 확인 구간은 [Learning from Feedback with Tools/Code 05:00–08:00](https://www.youtube.com/watch?v=Lxh9RF5S-K0&t=300s), [Planning and Multi-Step Reasoning 07:00–13:00·19:00 및 25:00–33:00](https://www.youtube.com/watch?v=Ml_fp9XkB8Y&t=420s)다. 강의가 여러 연구를 설명한다는 점은 [공식 일정](https://cs329a.stanford.edu/)으로 확인했다. 영상 watch 페이지의 재조회는 실패해 원음을 새로 청취하지 않았으며, 자동 자막은 직접 인용문으로 사용하지 않는다. 기관·강의명은 이 확인 경로에만 남긴다.
+
+| 원저작물·확인 위치 | 원문이 다루는 동작 | 이 실험에서 사용하는 범위 |
+|---|---|---|
+| Yao et al., [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629), 초록·강의 06:00 도식 | 추론과 행동을 번갈아 수행하고 환경 관측을 다음 선택의 문맥에 넣는다. | 명령 출력은 관측으로, 원인 가설은 해석으로 구분한다. 검사 통과나 변경 채택은 별도 판단이다. |
+| Zhou et al., [Language Agent Tree Search Unifies Reasoning, Acting, and Planning in Language Models](https://arxiv.org/html/2310.04406v3), v3 §4.2·6·Appendix B | **Language Agent Tree Search(LATS)**는 MCTS로 행동 후보를 탐색한다. **Backpropagation**은 탐색 트리의 값 갱신이며 모델 가중치 학습이 아니다. 이전 환경 상태로 돌아갈 수 있다는 가정이 있다. | 대안 비교 전 상태 복원 조건을 확인한다. 파일 사본만으로 프로세스·외부 부수효과까지 복원된다고 가정하지 않는다. 이번 파일럿은 LATS 구현이 아니다. |
+| Biju et al., [Sprint: Enabling Interleaved Planning and Parallelized Execution in Reasoning Models](https://arxiv.org/html/2506.05745v2), v2 §3.1–3.2·Fig. 1 | **Planning → Parallel executions → Syncing**을 반복한다. 같은 단계의 독립 하위 과제에 대한 모델 출력을 누적 문맥에 합친다. 데이터의 의존 DAG 구성과 모델 미세조정은 별도 학습 과정이다. | 독립성 확인과 결과 수집을 참고한다. 원문의 executor는 하위 문제를 푸는 모델이며 CPU 검사기가 아니다. VM 슬롯 보정은 자체 실행 설계이고, 결과 동기화는 독립 평가가 아니다. |
+| Mishra·Rajeev·Chakraborty, [Tree-of-Concerns: Hierarchical Multi-Agent Debate for Unstated-Limitation Extraction in Scientific Critique](https://arxiv.org/html/2608.20777v1), v1 §3.3–3.5 | 논문에 명시되지 않은 한계를 찾기 위해 관점별로 쟁점을 제기하고 반박·재검토·판정을 거친다. 생성 중에는 분기 사이의 통신을 막는다. | 필요할 때 고정 후보의 쟁점별 검토에 참고한다. 코드 위치·반례·검사 명령을 요구하는 세 관점은 자체 제안이며, 모델의 판정은 컴파일러 정확성 증거가 아니다. |
+
+과거 강의 요약의 “evaluator가 결과를 통합한다”는 표현은 Sprint의 **Syncing**으로 바로잡는다. 또한 [RLEF: Grounding Code LLMs in Execution Feedback with Reinforcement Learning](https://arxiv.org/html/2410.02089v2) v2 Fig. 2·§2에서는 private tests도 PPO 학습 보상에 쓰인다. 이를 이 실험의 후보 고정 후 독립 최종 검사와 같은 역할로 옮기지 않는다. 위 구분은 참고 스킬의 해당 요약에도 반영했다.
+
 ## 실험·PR 설계의 추가 원문
 
-- [SPRINT §3.1](https://arxiv.org/html/2506.05745v2), [LATS](https://arxiv.org/html/2310.04406v3): 작업 의존성·결과 동기화와 상태 복원 조건. 성능 수치를 이 실험에 대입하지 않는다.
-- [Tree-of-Concerns](https://arxiv.org/pdf/2608.20777): 논문 비평의 쟁점 분해를 후속 E2 검토에 제한적으로 참고한다.
 - [DoRA v2 §3.2·4](https://arxiv.org/html/2402.09353v2): 문단 전개를 참고하며 학습 방법의 이식은 아니다.
 - [Nebius VM 종류](https://docs.nebius.com/compute/virtual-machines/types), [Sandbox overview](https://docs.tokenfactory.nebius.com/sandboxes/overview): 제품 안내이며 실제 할당·계정 접근의 증거는 아니다.
 - [GitHub branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches): required check가 skipped/neutral도 허용한다는 점, strict up-to-date와 stale approval 처리. 저장소의 실제 설정은 API 응답으로 별도 확인한다.
 - [GitHub pull_request event](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request): 기본 test merge checkout과 head/base revision을 구분한다.
+
+## 2026-09-14 Nebius CI 계획의 원문과 선택
+
+아래는 공개 문서를 확인한 설계 근거다. 계정의 VM 사용권·잔액·실제 자원 할당이나 이 repo의 CI 구현 결과가 아니다. 운영 절차의 정본은 [실험 계획](experiment.md)이다.
+
+| 원문 | 확인한 내용과 적용 |
+|---|---|
+| [VM 플랫폼](https://docs.nebius.com/compute/virtual-machines/types) | `cpu-d3`는 AMD EPYC 9654 기반이며 `8vcpu-32gb` preset은 8 vCPU·32 GiB다. 초기 후보로 정하되 실제 지역·할당 가능 여부는 실행 전에 확인한다. 32 GiB가 빌드·검사에 충분하다는 실측 결과는 없다. |
+| [부팅 이미지](https://docs.nebius.com/compute/storage/boot-disk-images) | non-GPU 기본 이미지가 Ubuntu 24.04이며 `ubuntu22.04-driverless`로 새 디스크를 만드는 경로는 deprecated다. `[설계]` 24.04 host와 위 pin의 Dockerfile을 참고한 24.04 amd64 빌드 컨테이너를 선택한다. 정확한 image ID·digest와 userspace·native dependency 호환성은 아직 고정·실행 검증하지 않았다. |
+| [브라우저 없는 CLI 인증](https://docs.nebius.com/cli/no-browser) | service account의 authorized key를 CI secret에서 주입하는 경로가 문서화돼 있다. `[설계]` 권한 있는 controller만 이 키를 사용하고 후보 worker에 전달하지 않는다. private key가 있으므로 secretless 인증이라고 부르지 않는다. |
+| [VM 삭제](https://docs.nebius.com/compute/virtual-machines/delete), [과금](https://docs.nebius.com/compute/resources/pricing), [예산](https://docs.nebius.com/signup-billing/budgets) | VM 삭제는 VM-managed disk도 삭제하며 별도 volume은 따로 정리해야 한다. stop 이후에도 storage 비용이 남고 예산 알림은 자동 지출 차단이 아니다. `[설계]` 한 대로 시작하고 정확한 자원 식별자를 기록해 종료·취소 뒤 삭제 및 재조회를 수행한다. 잔존 자원 정리는 자체 구현 계획이지 Nebius 기본 TTL 기능이 아니다. |
+| [GitHub 보안](https://docs.github.com/en/actions/reference/security/secure-use), [environment 제한](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments) | 공개 PR 코드와 secret을 가진 실행 경로를 분리한다. `[설계]` GitHub-hosted 기본 CI를 유지하고 신뢰된 main의 승인형 controller만 VM을 관리한다. environment 승인이나 workflow 이름만으로 후보 코드가 신뢰되는 것은 아니다. |
+
+KG 엔진 보류는 외부 연구가 입증한 우열이 아니라 현재 작업의 미구현 지점과 읽기 경로를 바탕으로 한 선택이다. [판단 기록](context.md)에 기준선·재검토 조건을 남긴다.
 
 외부 소스·논문·전사 전체를 vendoring하지 않는다. 이 저장소의 자체 서술과 코드는 개인 연구이며 FuriosaAI나 Dioxus의 공식 정책을 대변하지 않는다.

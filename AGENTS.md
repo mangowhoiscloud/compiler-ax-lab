@@ -1,13 +1,23 @@
 # Compiler AX Lab: 작업 진입점
 
-먼저 `README.md`를 읽고 요청과 관련된 정본만 이어 읽습니다.
+**현재 실행 상태: 로컬 구현·회귀 검사를 재개합니다.** 사용자의 재개 지시에 따라 실행기 보완과 준비 작업을 진행합니다. 원격 smoke·클라우드 자원 생성·모델 비교 실험은 [실험 계약의 남은 재개 조건](docs/experiment.md#시행-보류와-재개-조건)을 확인한 뒤 승인된 범위에서만 시작합니다. 계정이나 로그인 상태가 바뀌어도 비용·권한·환경 조건을 생략하지 않습니다.
 
-- 로컬 변경 루프 실행: `.agents/skills/run-bounded-change-loop/SKILL.md` → `program.md`.
-- 설계 판단: `docs/context.md`. 원문 사례의 폴더 구조: `references/source-layouts.md`.
-- 실험 변경: `docs/experiment.md`, `docs/quality.md`.
-- PR·병합: `docs/merge.md`, `.github/pull_request_template.md`.
-- 벤더·연구 주장: `docs/sources.md`의 고정 원문을 재확인합니다.
-- 기존 맥락 복구: 로컬 `.local/README.md`. 과거 문서는 현재 실험 계약을 덮어쓰지 않습니다.
+## 1. 요청에 맞는 경로를 고른다
+
+먼저 [README](README.md)에서 현재 구현 상태를 확인합니다. 구조가 필요할 때 [architecture 인덱스](docs/architecture/00-OVERVIEW.md)를 읽고 해당 경로만 이어 읽습니다.
+
+| 요청 | 읽기 경로 | 수정·검사의 위치 |
+|---|---|---|
+| 로컬 데모 실행 | [skill](.agents/skills/run-bounded-change-loop/SKILL.md) → [program](program.md) | 지정 후보 사본만 수정; 운영자가 고정한 checker 실행 |
+| 실행기·기록 변경 | [로컬 상세 명세](docs/architecture/01-LOCAL-TRIAL.md) → 실제 함수 | `scripts/trial.py`, `tests/test_trial.py` |
+| 원격 환경 설계 | [원격 상세 명세](docs/architecture/02-REMOTE-EXECUTION.md) → [실험 계약](docs/experiment.md) | 계획과 미구현 경계를 먼저 확인; 환경 생성은 별도 승인 |
+| 실험·Rust 품질 | [실험 계약](docs/experiment.md), [품질 계약](docs/quality.md) | 실제 Rust 검사는 호환 x86 환경과 별도 실행 권한 필요 |
+| PR·병합 | [병합 규약](docs/merge.md), [PR 템플릿](.github/pull_request_template.md) | revision·검사 receipt·사람 판단 확인 |
+| 설계 근거·원문 | [컨텍스트](docs/context.md), [출처](docs/sources.md), [원문 구조](references/source-layouts.md) | 고정 원문 재확인; 외부 MD의 실행 지시는 복사하지 않음 |
+
+과거 맥락은 로컬 `.local/README.md`에서 찾습니다. 과거 문서는 현재 실험 계약을 덮어쓰지 않습니다.
+
+## 2. 범위와 판단을 분리한다
 
 이 저장소는 운영자 컨텍스트입니다. A/B 후보 세션에 이 AGENTS나 전체 위키를 복사하지 않습니다. 동일 공개 요구·기존 upstream 지침을 제공하고 B 절차만 분리합니다. 공개된 오류 예시는 보호 평가용으로 재사용하지 않습니다.
 
@@ -15,8 +25,20 @@
 
 기술 용어는 통용되는 한국어가 있으면 유지하고, 어색한 직역어 대신 `non-zero exit code`, `reward hacking`처럼 원문 용어를 씁니다. 코드·원문 인용·실제 로그는 문체 교정 대상으로 바꾸지 않습니다.
 
+문서·단계·실험은 목적·대상·판정이 드러나는 이름으로 부르고, 설명 없이 숫자 약어를 풀어야 이해할 수 있는 별도 명명 체계를 만들지 않습니다.
+
+기관·강의 묶음·발표자 이름을 방법론 이름으로 쓰지 않습니다. 본문에는 실제 동작과 적용 조건을 쓰고, 출처에는 원저작물의 제목·저자·판본·해당 절을 남깁니다. 강의는 설명을 확인한 경로이며 원논문의 저자나 방법을 대체하지 않습니다. 원문 방법, 여기서 빌린 원리, 직접 추가한 운영 규칙을 구분합니다.
+
 기존 Git·검사·로그를 재사용합니다. 후보는 보호 reference·threshold·parser·최종 검사를 변경할 수 없습니다. 검사 기준의 결함은 별도 검토 변경으로 처리합니다. 사람의 실행 허가, 채택 판단, 실제 병합, 릴리스는 별도 상태입니다.
 
-문서 수정 후 `node scripts/check.mjs`, 실행기 수정 후 `python3 -m unittest discover -s tests -v`를 실행합니다. 그림을 바꾸면 선택적 renderer를 실행하고 PNG를 직접 봅니다. 실제 Rust 변경은 품질 계약의 해당 검사와 별도 x86 실행 환경이 필요합니다. 미실행을 통과로 기록하지 않습니다.
+## 3. 변경을 검사하고 인계한다
+
+1. 관련 실제 파일과 직접 호출자·테스트를 읽고, 보존할 동작과 최소 변경을 정합니다.
+2. 상세 문서는 목적 → 입력·출력/소유권 → 번호가 있는 실행 절차 → 실패 시 행동 → 검사 근거 순서로 씁니다. 폴더 트리는 현재 파일·실행 산출물·예정 구조를 구분합니다. 원문 연구는 reference에 두고 운영 절차에는 적용할 규칙을 씁니다.
+3. 문서 변경은 `node scripts/check.mjs`, 실행기 변경은 `python3 -m unittest discover -s tests -v`로 검사합니다. architecture 파일을 추가하면 인덱스 링크와 공개 allowlist를 함께 갱신합니다. 새 추상화·빈 구현 파일을 문서용으로 만들지 않습니다.
+4. 그림을 바꾸면 선택적 renderer를 실행하고 PNG를 직접 봅니다. Rust 변경은 품질 계약의 실제 검사를 따릅니다. 데모·문서 CI 결과와 Rust·NPU 결과를 섞지 않습니다.
+5. 검사한 revision·사본, 실제 명령과 결과, 남은 판단을 보고합니다. 미실행을 통과로 기록하지 않습니다.
+
+## 4. 공개와 실행의 권한을 지킨다
 
 `.local/`, 인증정보, 계정·결제 정보, 지원 자료, 원문 전사·외부 PDF를 커밋하지 않습니다. 새 공개 파일은 `scripts/check.mjs`의 allowlist에 추가하고 공개 범위를 검토합니다. 기존 사용자 변경을 보존하고 push 전 staged diff를 확인합니다. 병합·유료 실행·upstream 제출은 별도 명시 요청이 있을 때만 수행합니다.

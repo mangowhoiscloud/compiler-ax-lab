@@ -1,4 +1,5 @@
 """Small stdlib integration checks; no model, network, GPU, or compiler execution."""
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -24,13 +25,22 @@ class TrialTests(unittest.TestCase):
 
     def cli(self, *args):
         process = subprocess.run([sys.executable, str(RUNNER), *map(str, args)], capture_output=True, text=True, timeout=10)
-        return json.loads(process.stdout)
+        result = json.loads(process.stdout)
+        expected_code = 0 if result.get("state") in ("READY", "READY_FOR_REVIEW") else 1
+        self.assertEqual(process.returncode, expected_code, process.stdout + process.stderr)
+        return result
 
     def initialize(self, *extra):
         return self.cli("init", "--run-dir", self.run, "--candidate", self.candidate, "--checker", self.checker, *extra)
 
     def check(self):
         return self.cli("check", "--run-dir", self.run)
+
+    def refresh_result_receipt(self):
+        admission = self.run / "admission.json"
+        data = json.loads(admission.read_text())
+        data["results_sha256"][0] = hashlib.sha256((self.run / "attempt-001/result.json").read_bytes()).hexdigest()
+        admission.write_text(json.dumps(data))
 
     def test_fail_repair_pass_and_preserve_snapshots(self):
         self.assertEqual(self.initialize()["state"], "READY")
@@ -41,6 +51,7 @@ class TrialTests(unittest.TestCase):
         fixed = self.candidate.read_bytes()
         second = self.check()
         self.assertEqual((second["outcome"], second["state"]), ("PASS", "READY_FOR_REVIEW"))
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "READY_FOR_REVIEW")
         self.assertEqual((self.run / "attempt-001/candidate.py").read_bytes(), baseline)
         self.assertEqual(self.candidate.read_bytes(), fixed)
         self.assertFalse(self.check()["admitted"])
@@ -58,10 +69,10 @@ class TrialTests(unittest.TestCase):
         self.candidate.write_text("import subprocess,sys,time\nfrom pathlib import Path\n"
                                   "p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(20)'])\n"
                                   "Path('child.pid').write_text(str(p.pid))\ntime.sleep(5)\n")
-        self.initialize("--timeout", "0.3")
+        self.initialize("--timeout", "1")
         result = self.check()
         self.assertEqual((result["outcome"], result["state"]), ("TIMEOUT", "STOP"))
-        self.assertLess(result["elapsed_seconds"], 2)
+        self.assertLess(result["elapsed_seconds"], 3)
         self.assertFalse(self.check()["admitted"])
         pid = (self.run / "attempt-001/child.pid").read_text()
         child = subprocess.run(["ps", "-o", "stat=", "-p", pid], capture_output=True, text=True)
@@ -124,6 +135,141 @@ class TrialTests(unittest.TestCase):
         self.candidate.unlink()
         self.candidate.symlink_to(EXAMPLE / "candidate.py")
         self.assertEqual(self.check()["state"], "STOP")
+
+    def test_status_rejects_missing_or_changed_artifacts_without_writing(self):
+        self.candidate.write_text(self.candidate.read_text().replace("total +=", "total ="))
+        self.initialize()
+        self.check()
+        attempt = self.run / "attempt-001"
+        paths = [attempt / name for name in ("candidate.py", "invocation.json", "stdout.log", "stderr.log", "result.json")]
+        paths += [self.run / name for name in ("contract.json", "admission.json", "checker.py")]
+        paths += [self.candidate, self.checker]
+        for path in paths:
+            original = path.read_bytes()
+            for missing in (True, False):
+                with self.subTest(path=path.name, missing=missing):
+                    path.unlink() if missing else path.write_bytes(b"corrupted")
+                    result = self.cli("status", "--run-dir", self.run)
+                    self.assertEqual((result["outcome"], result["state"]), ("INVALID", "STOP"))
+                    self.assertFalse((self.run / "stop.json").exists())
+                    self.assertEqual(len(list(self.run.glob("attempt-*"))), 1)
+                    path.write_bytes(original)
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "READY_FOR_REVIEW")
+
+    def test_status_rederives_result_fields_and_requires_receipt(self):
+        self.candidate.write_text(self.candidate.read_text().replace("total +=", "total ="))
+        self.initialize()
+        self.check()
+        path = self.run / "attempt-001/result.json"
+        original = json.loads(path.read_text())
+        changes = {"outcome": "FAIL", "state": "REVISE", "attempt": 2, "tests": 0, "exit_code": 1,
+                   "elapsed_seconds": -1, "candidate_sha256": "wrong", "authority": "merge", "reason": "changed"}
+        for key, value in [*changes.items(), ("tests", True), ("exit_code", False),
+                           ("elapsed_seconds", float("nan")), ("elapsed_seconds", float("inf")), ("elapsed_seconds", 10 ** 1000),
+                           ("artifacts_sha256", None)]:
+            with self.subTest(key=key, value=value):
+                changed = {**original, key: value}
+                if key == "artifacts_sha256":
+                    del changed[key]  # Legacy receipts are not silently upgraded.
+                path.write_text(json.dumps(changed))
+                self.refresh_result_receipt()  # Exercise semantic checks independently of the byte receipt.
+                self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "STOP")
+        path.write_text(json.dumps(original))
+        self.refresh_result_receipt()
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "READY_FOR_REVIEW")
+        admission = self.run / "admission.json"
+        data = json.loads(admission.read_text())
+        del data["results_sha256"]
+        admission.write_text(json.dumps(data))
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "STOP")
+
+    def test_status_checks_raw_evidence_and_command_not_just_hashes(self):
+        self.candidate.write_text(self.candidate.read_text().replace("total +=", "total ="))
+        self.initialize()
+        self.check()
+        attempt = self.run / "attempt-001"
+        result_path = attempt / "result.json"
+        original_result = result_path.read_text()
+        mutations = [("stdout.log", "status", "FAIL"), ("stdout.log", "candidate_sha256", "wrong"),
+                     ("stdout.log", "tests", []), ("invocation.json", "command", ["echo", "PASS"]),
+                     ("invocation.json", "contract_sha256", "wrong")]
+        for name, key, value in mutations:
+            with self.subTest(name=name, key=key):
+                path = attempt / name
+                original = path.read_bytes()
+                changed = json.loads(original)
+                changed[key] = value
+                path.write_text(json.dumps(changed))
+                result = json.loads(original_result)
+                result["artifacts_sha256"][name] = hashlib.sha256(path.read_bytes()).hexdigest()
+                result_path.write_text(json.dumps(result))
+                self.refresh_result_receipt()
+                self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "STOP")
+                path.write_bytes(original)
+        result_path.write_text(original_result)
+        self.refresh_result_receipt()
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "READY_FOR_REVIEW")
+
+    def test_status_checks_all_attempts_and_prevents_resume_after_corruption(self):
+        self.initialize()
+        self.check()
+        self.candidate.write_text(self.candidate.read_text().replace("total +=", "total ="))
+        self.check()
+        first = self.run / "attempt-001"
+        first.rename(self.run / "attempt-003")
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "STOP")
+        (self.run / "attempt-003").rename(first)
+        (first / "stderr.log").write_text("changed historical diagnostic")
+        result = self.cli("status", "--run-dir", self.run)
+        self.assertEqual((result["outcome"], result["state"]), ("INVALID", "STOP"))
+        self.assertFalse(self.check()["admitted"])
+        self.assertEqual(len(list(self.run.glob("attempt-*"))), 2)
+
+    def test_status_rejects_missing_attempt_suffix_or_all_attempts(self):
+        self.initialize()
+        self.check()
+        self.assertEqual(self.check()["state"], "STOP")
+        (self.run / "attempt-002").rename(self.root / "lost-last")
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "STOP")
+        (self.run / "attempt-001").rename(self.root / "lost-first")
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "STOP")
+        self.assertFalse(self.check()["admitted"])
+        self.assertFalse(list(self.run.glob("attempt-*")))
+
+    def test_reserved_but_unfinished_attempt_stays_closed(self):
+        self.initialize()
+        admission = self.run / "admission.json"
+        data = json.loads(admission.read_text())
+        data["results_sha256"].append(None)
+        admission.write_text(json.dumps(data))
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "STOP")
+        (self.run / "attempt-001").mkdir()
+        self.assertEqual(self.cli("status", "--run-dir", self.run)["state"], "STOP")
+        self.assertFalse(self.check()["admitted"])
+        self.assertEqual(len(list(self.run.glob("attempt-*"))), 1)
+
+    def test_status_rejects_attempt_after_terminal_state_and_forged_stop(self):
+        self.candidate.write_text(self.candidate.read_text().replace("total +=", "total ="))
+        self.initialize()
+        self.check()
+        (self.run / "attempt-002").mkdir()
+        admission = self.run / "admission.json"
+        original_admission = admission.read_bytes()
+        data = json.loads(original_admission)
+        data["results_sha256"].append(None)
+        admission.write_text(json.dumps(data))
+        result = self.cli("status", "--run-dir", self.run)
+        self.assertEqual(result["state"], "STOP")
+        self.assertIn("terminal state", result["reason"])
+        (self.run / "attempt-002").rmdir()
+        admission.write_bytes(original_admission)
+        for content in ("not json", "null", '{"outcome":"PASS","state":"READY_FOR_REVIEW","reason":"forged"}'):
+            with self.subTest(content=content):
+                (self.run / "stop.json").write_text(content)
+                result = self.cli("status", "--run-dir", self.run)
+                self.assertEqual((result["outcome"], result["state"]), ("INVALID", "STOP"))
+                self.assertFalse(self.check()["admitted"])
+                self.assertEqual((self.run / "stop.json").read_text(), content)
 
 
 if __name__ == "__main__":

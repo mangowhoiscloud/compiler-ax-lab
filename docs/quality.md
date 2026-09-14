@@ -2,6 +2,27 @@
 
 **[추론: 파일럿 적용 기준]** 첫 과제는 double-buffering의 테스트 보강이다. 제품 구현을 임의로 바꾸거나 새 품질 프레임워크를 만드는 과제가 아니다. 기존 코드 관례·명령을 재사용하되, 실행 누락과 잘못된 판정 때문에 정상처럼 보이는 변경을 구별한다. 근거는 [Furiosa·Dioxus·Rust 원문 대장](sources.md)에 있다. 아래 기준은 설계에 반영했으며 Rust 검사·CI 구현은 아직 실행하지 않았다.
 
+### 입력과 수치 계약
+
+**고정 소스에서 확인한 범위이며 새 Rust 테스트는 아직 없습니다.** `9b9cf0f`의 축은 `Tok=16, Red=64, Out=8, Group=20, Pairs=10`이고 대상은 rolled·software-pipelined·unrolled 세 구현입니다. [고정 소스와 확인 범위](sources.md)
+
+| 데이터 | 논리 타입·shape | 원자료 크기 |
+|---|---|---:|
+| activation | `bf16[16,64]` | 2 KiB |
+| weight | `bf16[20,8,64]` | 20 KiB |
+| output | `bf16[16,20,8]` | 5 KiB |
+
+bf16 원소당 2바이트로 계산한 합계는 27 KiB입니다. 실제 저장 layout·정렬·중간 버퍼·host 복사·oracle·빌드 메모리는 이 값에 포함하지 않습니다. 첫 과제에서는 축과 kernel을 유지하며 홀수 Group이나 다른 shape 지원을 추가하지 않습니다.
+
+수학적 기대값은 `out[t,g,o] = sum_r activation[t,r] * weight[g,o,r]`입니다. 이 식만으로 실제 누산·반올림 계약이 정해지지는 않습니다. 실행 재개 후 평가 준비 담당자가 다음을 고정하고, 같은 공개 수치 요구를 A/B 양쪽에 제공합니다.
+
+1. **입력:** 생성식·seed·값 범위·case ID를 정합니다. 그룹별로 구별 가능한 값과 첫·마지막 그룹, pairing 경계를 포함하고 실제 입력을 재생할 수 있게 남깁니다. 현재 문서의 사례는 공개 개발용이며 보호 입력으로 다시 쓰지 않습니다.
+2. **Oracle:** 대상 kernel이나 동일 helper의 재호출로 기대값을 만들지 않습니다. 독립 계산의 누산 정밀도·연산 순서·bf16 변환 시점과 finite/NaN/Inf의 허용 범위를 명시합니다. 처음에는 반올림 해석이 명확한 작은 입력을 고르되, 정확 일치를 쓸 수 있는지는 선택한 값과 연산으로 확인합니다.
+3. **비교:** exact 또는 오차 비교의 선택, 절대·상대 오차와 적용 식·단위를 검사 전에 고정합니다. 후보 결과를 본 뒤 expected·threshold를 완화하지 않습니다. 현재 정수 JSON 데모의 정확 일치 판정을 bf16에 자동 적용하지 않습니다.
+4. **대조군:** 정상/오류 구현의 ID·revision·위반 요구와 독립 확인 근거를 남깁니다. 오류 구현은 컴파일되고 의도한 출력 차이를 만들어야 합니다. 생성 테스트에 입력을 공급하고 실제 assertion 실행을 확인하는 방식도 사전 고정합니다. 집계는 [실험 계약의 판정 단위](experiment.md#결함-검출의-판정-단위)를 따릅니다.
+
+현재 미확정 값은 입력 생성식·seed/범위, oracle 구현과 수치 비교값, 공개 검사 세 개의 정확한 이름, 정상/보호 오류 구현 목록·입력 공급 방식·검사 담당자입니다. 이들을 임의의 default나 측정값으로 채우지 않으며 확정·승인 전에는 비교를 시작하지 않습니다. host 값 검사는 실제 NPU의 buffer 소비 순서나 중첩 성능을 입증하지 않습니다.
+
 ### 컨벤션은 기존 구조를 보존하고 변경 이유를 드러내야 한다
 
 - **읽기와 수정 범위:** 작업할 crate의 구현·직접 호출자·기존 테스트·관련 문서를 먼저 확인한다. 첫 과제의 허용 파일은 새 테스트와 필요한 테스트 helper·설명으로 고정한다. kernel·runtime·macro·build script·dependency·평가 코드 변경이 필요하면 중단해 재합의한다. 다른 기능 정리와 대규모 리팩터링을 함께 넣지 않는다.
@@ -17,12 +38,12 @@
 
 | 단계 | 검사·증거 | 실패 또는 누락 시 행동 |
 |---|---|---|
-| Q0 계약·환경 | pin/lock/toolchain/native artifact, 허용 파일·금지 효과, 자원·시간 상한. 무변경 baseline에서 필요한 명령과 테스트 목록 확인 | 준비 실패면 E0/E1 시작 금지. 기존 warning·flaky failure도 사전 기록하며 후보가 숨기지 못하게 한다. |
-| Q1 범위·기계 품질 | diff와 새 파일까지 확인; `make fmt`; 표적 cargo check/clippy. 안정 후보에서 `make check`, `make clippy`, `cargo machete` | 원문 diagnostic으로 수정하거나 이관한다. suppression·test 삭제로 통과시키지 않는다. |
-| Q2 실제 동작 | release 표적 테스트의 이름·실행 수·seed·입력·expected/actual·exit code. 세 variant의 그룹별 값을 별도 기대값과 비교 | 출력 오류는 반례. 0 tests·조건부 조기 return·누락 로그는 성공에서 제외한다. timeout/OOM의 원인과 비용을 남긴다. |
-| Q3 통합·문서 | 안정 revision에서 기존 `make test`. 문서 변경 시 `make mdbook-build`와 해당 예제 실행/`make mdbook-test`; 생성물은 재생성 diff 확인 | workspace 결과와 제외/ignored/NPU 미실행을 분리한다. docs build·파일 생성만으로 실행 성공을 주장하지 않는다. |
-| Q4 독립 최종 확인 | 공개 수정 종료 후 snapshot 고정. 보호 정상/의도 오류 구현에서 생성 테스트를 1회 평가; reference·parser·오차는 후보 밖에서 관리 | 정상 오탐/오류 누락/검사 무효를 분리한다. 실패 뒤 수정은 새 실험이다. 보호 로그를 같은 후보의 repair에 반환하지 않는다. |
-| Q5 사람의 채택 | 목적·구조·API·테스트 의미·잔여 위험 검토. 필수 검사 목록과 실제 receipt를 같은 candidate revision에 연결 | required check가 없거나 skipped/cancelled이면 완료 불가. 담당자가 이유와 함께 기각/보류한다. PR·병합·릴리스는 별도 승인이다. |
+| 계약·환경 확인 | pin/lock/toolchain/native artifact, 허용 파일·금지 효과, 자원·시간 상한. 무변경 baseline에서 필요한 명령과 테스트 목록 확인 | 준비 실패면 검사 병렬도 보정과 에이전트 작업 절차 비교를 시작하지 않는다. 기존 warning·flaky failure도 사전 기록하며 후보가 숨기지 못하게 한다. |
+| 범위·코드 품질 검사 | diff와 새 파일까지 확인; `make fmt`; 표적 cargo check/clippy. 안정 후보에서 `make check`, `make clippy`, `cargo machete` | 원문 diagnostic으로 수정하거나 이관한다. suppression·test 삭제로 통과시키지 않는다. |
+| 출력 동작 검사 | release 표적 테스트의 이름·실행 수·seed·입력·expected/actual·exit code. 세 variant의 그룹별 값을 별도 기대값과 비교 | 출력 오류는 반례. 0 tests·조건부 조기 return·누락 로그는 성공에서 제외한다. timeout/OOM의 원인과 비용을 남긴다. |
+| 통합·문서 검사 | 안정 revision에서 기존 `make test`. 문서 변경 시 `make mdbook-build`와 해당 예제 실행/`make mdbook-test`; 생성물은 재생성 diff 확인 | workspace 결과와 제외/ignored/NPU 미실행을 분리한다. docs build·파일 생성만으로 실행 성공을 주장하지 않는다. |
+| 독립 최종 검사 | 공개 수정 종료 후 snapshot 고정. 보호 정상/의도 오류 구현에서 생성 테스트를 1회 평가; reference·parser·오차는 후보 밖에서 관리 | 정상 오탐/오류 누락/검사 무효를 분리한다. 실패 뒤 수정은 새 실험이다. 보호 로그를 같은 후보의 repair에 반환하지 않는다. |
+| 사람의 채택 검토 | 목적·구조·API·테스트 의미·잔여 위험 검토. 필수 검사 목록과 실제 receipt를 같은 candidate revision에 연결 | required check가 없거나 skipped/cancelled이면 완료 불가. 담당자가 이유와 함께 기각/보류한다. PR·병합·릴리스는 별도 승인이다. |
 
 `PASS`, `FAIL`, `INVALID`, `NOT_RUN`을 검사별로 보존하고 timeout은 미완료 사유로 남긴다. 적용하지 않는 검사는 실행 전에 담당자가 근거와 함께 제외한다. 사후 N/A로 바꿔 통과율을 높이지 않는다. 기준 수정은 별도 변경이며 영향받은 A/B 결과를 다시 평가한다. 기존 실패는 baseline 문제부터 해소하거나 사전 예외를 합의한다. [추론]
 
@@ -36,11 +57,17 @@ cargo test -p furiosa-opt-examples --release --test binary_add_tests -- --list
 cargo test -p furiosa-opt-examples --release --test binary_add_tests -- --exact test_binary_add_2048
 ```
 
+위 명령은 **plain Cargo CPU 경로**입니다. 고정 upstream Dockerfile의 기본 `ENTRYPOINT`는 `cargo furiosa-opt`이므로, 해당 이미지를 사용할 때는 entrypoint를 `cargo` 또는 명시한 shell로 바꿉니다. 기본 entrypoint에 `test`만 전달해 CPU 검사라고 기록하지 않습니다. [Dockerfile·테스트 원문](sources.md)
+
+기존 `test_binary_add_2048`는 `assert_eq!`로 독립 덧셈 결과를 비교하며 성공한 원소의 expected/actual 전체를 출력하지 않습니다. 이 준비 검사의 receipt에는 고정 테스트 소스·hash, 정확한 테스트 이름·실행 수, libtest 결과·exit code를 연결해 **해당 assertion의 통과**를 기록합니다. 로그에 없는 실제 값은 생성하지 않습니다. 새 double-buffering 테스트의 입력·수치 증거 계약과 이 무변경 smoke의 관측 범위는 구분합니다.
+
 기존 checkpoint 묶음은 `make check`, `make clippy`, `cargo machete`, `make test`다. 공개 Makefile에는 `--all-features`가 없으며 `make test`는 release profile이다. `clippy-npu`는 별도 target으로 이 CPU 파일럿에 자동 추가하지 않는다. Cargo의 `--all-targets`는 모든 feature 조합이나 doctest 검사를 뜻하지 않는다. [실측]
 
 승인 뒤 `CARGO_BUILD_JOBS`, 테스트 스레드, 전용 `CARGO_TARGET_DIR`, 기타 내부 thread pool 한도와 cache 시작 상태를 고정한다. 직접 Cargo 명령에 `--locked`를 추가하는 재현 정책은 기존 Makefile과 구분한다. Make target을 유지할 경우 전후 lockfile hash도 대조한다. lock 변경이 필요한 준비는 A/B 시작 전에 끝낸다. `make mdbook-test`처럼 내부에서 target directory를 지정하는 명령은 해당 경로까지 후보별로 격리한다. [추론]
 
 `double_buffering_tests.rs`는 만들 파일의 **제안명**이다. 실제 생성 뒤 목록에서 발견되고 assertion이 실행되는지 확인한다. 정상 구현에서는 통과하고, 실행 가능한 알려진 오류에서는 의도한 값 비교로 실패해야 한다. compile error나 runner crash는 오류 검출이 아니다. 테스트 보강 과제는 정상 baseline을 깨뜨릴 필요가 없으며, 오류 대조군을 구별하는지가 핵심이다. [추론]
+
+`cargo furiosa-opt compile`은 선택 kernel의 번역·mapping/shape를 확인하는 별도 검사입니다. 이번처럼 kernel을 바꾸지 않는 host 테스트 보강에서는 이를 새 필수 후보 검사로 추가하지 않습니다. Kernel·target 산출물 변경이 필요하면 범위를 다시 합의하고 정적 검사와 필요한 장치 검사를 정합니다. CPU smoke에 NPU ELF 생성용 cross toolchain이나 장치 실행을 자동으로 포함하지 않습니다.
 
 ### Dioxus에서 옮길 것은 탐색 실패를 작은 회귀 검사로 남기는 방식이다
 
@@ -48,7 +75,7 @@ Dioxus의 현재 코드는 구조화된 동작을 incremental renderer와 fresh 
 
 첫 파일럿은 고정 경계 입력으로 시작한다. 후속 탐색은 원본 실패→축소 입력→원인 확인→일반 회귀 테스트로 남긴다. 테스트 수·coverage 비율만 목표로 삼지 않는다. 후보가 생성한 expected를 그대로 갱신하거나 검사 중 corpus를 덮어쓰지 않는다. parser/macro 변경에는 적법·부적법 입력과 예상 diagnostic, buffer 변경에는 값·수명·완료 순서의 검사를 선정한다. host에서 확인할 의무와 장치가 필요한 의무는 구분한다. [추론]
 
-Fuzzing, Miri, sanitizer, 광범위 dependency/보안 감사는 해당 위험과 실행 가능성이 확인될 때 추가한다. 첫 과제에는 새 framework·custom lint·CI 서비스가 필요하지 않다. 장기 탐색·공급망 정책·실기기 검증을 E1의 효과에 합치지 않는다. [실험 계약](experiment.md), [판단 컨텍스트](context.md)
+Fuzzing, Miri, sanitizer, 광범위 dependency/보안 감사는 해당 위험과 실행 가능성이 확인될 때 추가한다. 첫 과제에는 새 framework·custom lint·CI 서비스가 필요하지 않다. 장기 탐색·공급망 정책·실기기 검증을 에이전트 작업 절차 비교의 효과에 합치지 않는다. [실험 계약](experiment.md), [판단 컨텍스트](context.md)
 
 
-PR 준비·통합 revision 확인·병합 후 검사 절차는 [병합 규약](merge.md)을 따릅니다. 이 문서의 Q0–Q5는 컴파일러 실험 기준이며 현재 lab 문서 CI의 PASS와는 별개입니다.
+PR 준비·통합 revision 확인·병합 후 검사 절차는 [병합 규약](merge.md)을 따릅니다. 이 문서의 품질 검사·채택 절차는 컴파일러 실험 기준이며 현재 lab 문서 CI의 PASS와는 별개입니다.

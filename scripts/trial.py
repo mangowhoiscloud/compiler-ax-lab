@@ -51,32 +51,95 @@ def frozen_contract(root):
     contract = json.loads(raw)
     require(contract["version"] == 1 and contract["task"] == "group-reduction", "Unsupported task")
     require(contract["python"] == sys.version, "Python runtime drift")
+    require(type(contract["max_attempts"]) is int and 1 <= contract["max_attempts"] <= 20,
+            "Invalid attempt budget")
+    require(type(contract["timeout"]) in (int, float) and math.isfinite(contract["timeout"])
+            and 0 < contract["timeout"] <= 300 and contract["output_limit"] == OUTPUT_LIMIT,
+            "Invalid execution limits")
+    for path, expected in ((RUNNER, contract["runner_sha256"]),
+                           (contract["checker"], contract["checker_sha256"]),
+                           (root / "checker.py", contract["checker_sha256"])):
+        require(digest(checked_path(path).read_bytes()) == expected, "Protected checker or runner drift")
     return contract
+
+
+def artifact_hashes(attempt):
+    return {name: digest(checked_path(attempt / name).read_bytes())
+            for name in ("candidate.py", "invocation.json", "stdout.log", "stderr.log")}
+
+
+def next_state(outcome, number, max_attempts):
+    return "READY_FOR_REVIEW" if outcome == "PASS" else "REVISE" if outcome == "FAIL" and number < max_attempts else "STOP"
+
+
+def update_admission(root, admission):
+    pending = root / ".admission.tmp"
+    put(pending, admission)
+    os.replace(pending, root / "admission.json")
 
 
 def status(root, *, owns_lock=False):
     if (root / ".lock").exists() and not owns_lock:
         return {"state": "STOP", "outcome": "INVALID", "reason": "Active or interrupted lock; inspect before any retry"}
-    if (root / "stop.json").exists():
-        return read(root / "stop.json")
     try:
+        if (root / "stop.json").exists():
+            result = read(root / "stop.json")
+            require(result["state"] == "STOP" and result["outcome"] == "INVALID"
+                    and isinstance(result["reason"], str) and result["reason"], "Invalid stop record")
+            return result
         contract = frozen_contract(root)
         attempts = sorted(root.glob("attempt-*"))
+        receipts = read(root / "admission.json")["results_sha256"]
+        require(isinstance(receipts, list) and len(receipts) == len(attempts), "Admitted attempt count disagrees")
         if len(attempts) > contract["max_attempts"]:
             raise ValueError("Attempt count exceeds contract")
         if not attempts:
             return {"state": "READY", "attempts": 0}
         if [p.name for p in attempts] != [f"attempt-{i:03}" for i in range(1, len(attempts) + 1)]:
             raise ValueError("Attempt sequence is incomplete")
-        for attempt in attempts:
+        previous_state = "REVISE"
+        for number, attempt in enumerate(attempts, 1):
+            require(previous_state == "REVISE", "Attempt follows a terminal state")
             checked_path(attempt, directory=True)
+            require(digest(checked_path(attempt / "result.json").read_bytes()) == receipts[number - 1],
+                    "Stored result changed or incomplete")
             result = read(attempt / "result.json")
+            hashes = artifact_hashes(attempt)
+            require(result["artifacts_sha256"] == hashes, "Stored artifacts changed or receipt missing")
+            candidate_hash = hashes["candidate.py"]
+            require(result["candidate_sha256"] == candidate_hash, "Stored candidate identity disagrees")
+            if number == 1:
+                require(candidate_hash == contract["baseline_sha256"], "Stored baseline changed")
+            invocation = read(attempt / "invocation.json")
+            command = [sys.executable, "-I", str(root / "checker.py"), str(attempt / "candidate.py")]
+            require(invocation == {"command": command, "candidate_sha256": candidate_hash,
+                                   "contract_sha256": digest((root / "contract.json").read_bytes())},
+                    "Stored invocation disagrees with contract or candidate")
+            require(type(result["attempt"]) is int and result["attempt"] == number, "Stored attempt disagrees")
+            require(type(result["tests"]) is int and result["tests"] >= 0
+                    and type(result["exit_code"]) is int, "Invalid stored counts or exit code")
+            elapsed = result["elapsed_seconds"]
+            require(type(elapsed) in (int, float) and math.isfinite(elapsed) and elapsed >= 0,
+                    "Invalid stored elapsed time")
+            require(result["authority"] == "No merge or release authorization", "Invalid stored authority")
+            require(sum(checked_path(attempt / name).stat().st_size for name in ("stdout.log", "stderr.log"))
+                    <= contract["output_limit"], "Stored output exceeds limit")
+            outcome = result["outcome"]
+            require(outcome in ("PASS", "FAIL", "INVALID", "TIMEOUT"), "Invalid stored outcome")
+            if outcome in ("PASS", "FAIL"):
+                verdict, count = evidence(attempt, contract, candidate_hash, result["exit_code"])
+                require((outcome, result["tests"], result["reason"]) == (verdict, count, None),
+                        "Stored result disagrees with raw evidence")
+            else:
+                require(isinstance(result["reason"], str) and result["reason"], "Missing stop reason")
+            previous_state = next_state(outcome, number, contract["max_attempts"])
+            require(result["state"] == previous_state, "Stored state disagrees with outcome or budget")
         if result["state"] == "READY_FOR_REVIEW" and digest(checked_path(contract["candidate"]).read_bytes()) != result["candidate_sha256"]:
             return {"state": "STOP", "outcome": "INVALID", "reason": "Candidate changed since verified snapshot",
                     "verified_sha256": result["candidate_sha256"], "attempts": len(attempts)}
         return {**result, "attempts": len(attempts)}
-    except (OSError, ValueError, KeyError, TypeError):
-        return {"state": "STOP", "outcome": "INVALID", "reason": "Incomplete admission or attempt"}
+    except (OSError, ValueError, KeyError, TypeError, OverflowError) as error:
+        return {"state": "STOP", "outcome": "INVALID", "reason": f"Incomplete or inconsistent stored evidence: {error}"}
 
 
 def stop(root, reason):
@@ -105,7 +168,8 @@ def init(args):
                 "max_attempts": args.max_attempts, "timeout": args.timeout,
                 "output_limit": OUTPUT_LIMIT, "python": sys.version}
     put(root / "contract.json", contract)
-    put(root / "admission.json", {"contract_sha256": digest((root / "contract.json").read_bytes())})
+    put(root / "admission.json", {"contract_sha256": digest((root / "contract.json").read_bytes()),
+                                  "results_sha256": []})
     return {"state": "READY", "run_dir": str(root), "attempts": 0}
 
 
@@ -181,13 +245,10 @@ def check(root):
     try:
         previous = status(root, owns_lock=True)
         if previous["state"] not in ("READY", "REVISE"):
+            if previous.get("outcome") == "INVALID":
+                stop(root, previous["reason"])
             return {**previous, "admitted": False}
         contract = frozen_contract(root)
-        for path, expected in ((RUNNER, contract["runner_sha256"]),
-                               (checked_path(contract["checker"]), contract["checker_sha256"]),
-                               (root / "checker.py", contract["checker_sha256"])):
-            if digest(checked_path(path).read_bytes()) != expected:
-                return stop(root, "Protected checker or runner drift")
         number = previous["attempts"] + 1
         if number > contract["max_attempts"]:
             return stop(root, "Attempt budget exhausted")
@@ -195,6 +256,9 @@ def check(root):
         snapshot = candidate.read_bytes()
         if number == 1 and digest(snapshot) != contract["baseline_sha256"]:
             return stop(root, "First attempt must observe the admitted baseline before editing")
+        admission = read(root / "admission.json")
+        admission["results_sha256"].append(None)  # Reserve the attempt before execution; interrupted work stays closed.
+        update_admission(root, admission)
         attempt = root / f"attempt-{number:03}"
         attempt.mkdir()
         candidate_copy = attempt / "candidate.py"
@@ -216,13 +280,16 @@ def check(root):
             outcome, reason = "INVALID", "Candidate changed during verification"
         if digest(checked_path(root / "checker.py").read_bytes()) != contract["checker_sha256"]:
             outcome, reason = "INVALID", "Checker changed during verification"
-        if frozen_contract(root) != contract or digest(checked_path(contract["checker"]).read_bytes()) != contract["checker_sha256"] or digest(RUNNER.read_bytes()) != contract["runner_sha256"]:
+        if frozen_contract(root) != contract:
             outcome, reason = "INVALID", "Protected input changed during verification"
-        state = "READY_FOR_REVIEW" if outcome == "PASS" else "REVISE" if outcome == "FAIL" and number < contract["max_attempts"] else "STOP"
+        state = next_state(outcome, number, contract["max_attempts"])
         result = {"outcome": outcome, "state": state, "attempt": number, "tests": count,
                   "exit_code": code, "elapsed_seconds": elapsed, "candidate_sha256": candidate_hash,
-                  "reason": reason, "authority": "No merge or release authorization"}
+                  "reason": reason, "authority": "No merge or release authorization",
+                  "artifacts_sha256": artifact_hashes(attempt)}
         put(attempt / "result.json", result)
+        admission["results_sha256"][-1] = digest((attempt / "result.json").read_bytes())
+        update_admission(root, admission)
         return result
     except (OSError, ValueError, KeyError, TypeError) as error:
         return stop(root, error)

@@ -14,6 +14,8 @@ const allowed = new Set([
   'scripts/trial.py', 'tests/test_trial.py',
   'examples/group-reduction/candidate.py', 'examples/group-reduction/check.py',
   'docs/context.md', 'docs/experiment.md', 'docs/quality.md', 'docs/merge.md', 'docs/sources.md',
+  'docs/architecture/00-OVERVIEW.md', 'docs/architecture/01-LOCAL-TRIAL.md',
+  'docs/architecture/02-REMOTE-EXECUTION.md',
   'scripts/check.mjs', 'report/check-experiment-plan.mjs', 'report/render-experiment-approval.mjs',
   'report/assets/compiler-ax-experiment-approval.html',
   ...[1, 2, 3].map(i => `report/assets/compiler-ax-experiment-approval-${i}.png`),
@@ -44,12 +46,26 @@ for (const file of files) {
     assert.ok(target.startsWith(root) && existsSync(target), `Broken or escaping link: ${file} -> ${href}`);
   }
 }
+// Keep the architecture entrypoint complete; content/code agreement still needs review.
+function checkArchitectureIndex(index, pages) {
+  const links = new Set([...index.matchAll(/\]\(([^)#]+)(?:#[^)]*)?\)/g)].map(match => match[1]));
+  for (const page of pages) assert.ok(links.has(page), `Architecture page missing from index: ${page}`);
+}
+checkArchitectureIndex('[Page](01.md#entry)', ['01.md']);
+assert.throws(() => checkArchitectureIndex('[Page](01.md)', ['02.md']), /missing from index/);
+const architecture = files.filter(file => file.startsWith('docs/architecture/') && file.endsWith('.md'));
+const indexPath = 'docs/architecture/00-OVERVIEW.md';
+checkArchitectureIndex(readFileSync(resolve(root, indexPath), 'utf8'),
+  architecture.filter(file => file !== indexPath).map(file => file.slice('docs/architecture/'.length)));
+const agents = readFileSync(resolve(root, 'AGENTS.md'), 'utf8');
+assert.ok(agents.includes(`](${indexPath})`), 'AGENTS must route to the architecture index');
 const html = readFileSync(resolve(root, 'report/assets/compiler-ax-experiment-approval.html'), 'utf8');
-assert.deepEqual([...html.matchAll(/data-quality="(Q\d)"/g)].map(m => m[1]), ['Q0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5']);
+assert.deepEqual([...html.matchAll(/data-quality="([a-z-]+)"/g)].map(m => m[1]),
+  ['contract-environment', 'scope-code-quality', 'output-behavior', 'integration-docs', 'independent-final', 'human-adoption']);
 for (const anchor of [...html.matchAll(/href="#([^"]+)"/g)].map(m => m[1])) assert.ok(html.includes(`id="${anchor}"`));
 const pr = readFileSync(resolve(root, '.github/pull_request_template.md'), 'utf8');
 for (const field of ['Baseline SHA', 'PR head SHA', 'PR base SHA', 'checkout SHA', 'NOT_RUN', 'post-merge', '사람 검토']) assert.ok(pr.includes(field), field);
 const workflow = readFileSync(resolve(root, '.github/workflows/quality.yml'), 'utf8');
 for (const fragment of ['always()', 'needs: [lab-docs]', 'contents: read', 'node scripts/check.mjs', 'test "$DOCS_RESULT" = success']) assert.ok(workflow.includes(fragment), fragment);
 assert.ok(!workflow.includes('pull_request_target'), 'Do not run PR code with a privileged event');
-console.log(JSON.stringify({ status: 'PASS', publicFiles: files.length, qualityStages: 6, scope: 'local docs, public paths and illustrative arithmetic; no Rust/cloud run' }));
+console.log(JSON.stringify({ status: 'PASS', publicFiles: files.length, architecturePages: architecture.length, qualityStages: 6, scope: 'local docs, public paths and illustrative arithmetic; no Rust/cloud run' }));

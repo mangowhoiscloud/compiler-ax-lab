@@ -4,7 +4,7 @@
 
 이 lab에는 [PR 템플릿](../.github/pull_request_template.md), [CI](../.github/workflows/quality.yml), [CODEOWNERS](../.github/CODEOWNERS)가 있습니다. CI는 문서·공개 파일·산술과 로컬 변경 루프 실행기의 회귀 검사를 수행합니다. 실제 Rust·NPU 검사는 아직 실행하지 않았으며 이 CI가 대신하지 않습니다.
 
-기존 Furiosa 작업에는 head/base/통합 revision → 재검사 → 사람 병합 → post-merge CI → 별도 릴리스라는 도식이 있었지만 실제 PR 템플릿·원격 저장소·workflow는 없었습니다. 이번에는 같은 절차를 lab 운영에 연결합니다. Furiosa upstream에 PR을 올리는 일은 별도 승인입니다.
+이 개인 연구의 이전 설계에는 head/base/통합 revision → 재검사 → 사람 병합 → post-merge CI → 별도 릴리스라는 도식이 있었지만 실제 PR 템플릿·원격 저장소·workflow는 없었습니다. 이번에는 같은 절차를 lab 운영에 연결합니다. Furiosa upstream에 PR을 올리는 일은 별도 승인입니다.
 
 ## 변경에서 병합까지
 
@@ -32,7 +32,7 @@
 
 ## 필수 검사와 실제 강제 수준
 
-`lab-docs`는 path filter나 조건부 생략 없이 문서·산술·로컬 실행기 검사를 실행합니다. `lab-ci`는 `if: always()`로 실행되어 앞 job 결과가 정확히 `success`인지 확인합니다. GitHub required checks가 skipped/neutral도 허용하므로 단순히 초록색 badge만 보고 Q5를 통과시키지 않습니다. 둘 중 하나가 사라졌거나 취소·생략되면 병합하지 않습니다.
+`lab-docs`는 path filter나 조건부 생략 없이 문서·산술·로컬 실행기 검사를 실행합니다. `lab-ci`는 `if: always()`로 실행되어 앞 job 결과가 정확히 `success`인지 확인합니다. GitHub required checks가 skipped/neutral도 허용하므로 단순히 초록색 badge만 보고 사람의 채택 검토가 끝났다고 판단하지 않습니다. 둘 중 하나가 사라졌거나 취소·생략되면 병합하지 않습니다.
 
 공개 후 `main`에 PR 경유, `lab-ci` 필수, 최신 base 반영, 대화 해결, force push·삭제 금지를 설정하고 API 응답으로 확인합니다. 관리자의 우회도 허용하지 않는 설정을 사용합니다. 실제 적용 결과는 공개 완료 보고에서 따로 기록합니다. 이 파일의 존재만으로 서버 설정이 적용됐다고 판단하지 않습니다.
 

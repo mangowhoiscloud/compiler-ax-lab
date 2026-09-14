@@ -29,7 +29,7 @@ autoresearch/                 # 이 revision은 루트 파일 10개이며 하위
 
 **그대로 가져오지 않을 것.** 무한 반복은 유한한 시도·시간 예산으로 바꿉니다. 공유 브랜치의 자동 되돌리기를 사용하지 않습니다. 원본의 실패 점수 `0.000000`은 이 실험에 맞지 않으므로, 측정 실패는 수치가 아닌 실패 상태와 누락 사유로 보존합니다. MD의 수정 금지 문장과 해시 검사는 OS 접근 제어나 샌드박스가 아닙니다.
 
-## 2. Dioxus: 에이전트가 만든 변경을 실행 가능한 회귀로 좁힌다
+## 2. Dioxus: 구조화된 입력의 실패를 축소해 회귀 검사로 남긴다
 
 고정 revision: `ada3b67c73c1c5484dd2e8408cb21c470b200423` · [소스 트리](https://github.com/DioxusLabs/dioxus/tree/ada3b67c73c1c5484dd2e8408cb21c470b200423)
 
@@ -59,6 +59,16 @@ dioxus/
 **가져올 판단.** 컴파일러 입력의 구조를 유지하는 변이를 만들고, 실패를 작은 입력으로 줄여 회귀 테스트에 추가합니다. 커버리지 확보와 의미 보존 검증의 결과를 섞지 않습니다. 검사는 성공·실패와 재현 명령을 반환하고, 사람은 변경 범위와 남은 위험을 검토합니다.
 
 **그대로 가져오지 않을 것.** UI의 비교 오라클을 컴파일러에 그대로 쓰지 않습니다. worker 자동 확대, corpus 자동 변경, timeout 없는 단계를 복제하지 않습니다. 공개 CI를 근거로 모든 변경이 자동으로 안전하게 병합된다고 서술하지 않습니다.
+
+### 2.1 Architecture 문서: 탐색 경로와 실행 순서를 구분한다
+
+현재 디렉터리의 MD는 `00-OVERVIEW`, `01-CORE`, `02-CLI`, `03-RSX`, `04-SIGNALS`, `05-FULLSTACK`, `06-RENDERERS`, `07-HOTRELOAD`, `08-ASSETS`, `09-ROUTER`, `10-WASM-SPLIT`, `11-NATIVE-PLUGIN-FFI`, `12-MANIFEST-SYSTEM`입니다. 모든 주제를 이 실험에 복사하지 않습니다. [고정 디렉터리](https://github.com/DioxusLabs/dioxus/tree/ada3b67c73c1c5484dd2e8408cb21c470b200423/notes/architecture)
+
+1. **찾아갈 위치부터 제시합니다.** Overview는 주제 인덱스와 의존 트리를 먼저 둡니다. 이 실험도 현재 폴더·책임과 질문별 읽기 경로를 [00-OVERVIEW](../docs/architecture/00-OVERVIEW.md)에 둡니다. 번호가 붙은 주제 목록과 실제 시간 순서인 절차는 구분합니다. [원문 overview](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/notes/architecture/00-OVERVIEW.md)
+2. **필드와 실행을 연결합니다.** Core는 상태 구조 뒤에 render/event 순서를, CLI는 명령·요청 필드·상태 소유자 뒤에 처리 분기와 확장 순서를 둡니다. [로컬 명세](../docs/architecture/01-LOCAL-TRIAL.md)는 이를 실제 함수 → 계약 필드 → 검사 → 기록 → 다음 상태로 옮깁니다. [Core](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/notes/architecture/01-CORE.md), [CLI](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/notes/architecture/02-CLI.md)
+3. **설계 문서는 선택의 결과를 씁니다.** FFI 문서는 기존 방식의 제약과 선택한 처리 시점의 한계를 함께 설명합니다. Manifest 문서는 입력 필드가 플랫폼별 산출물에 어떻게 반영되는지 구분합니다. [원격 명세](../docs/architecture/02-REMOTE-EXECUTION.md)는 이 구조로 실행 계약·권한·기록 필드와 회수 조건을 명시합니다. [FFI design](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/notes/architecture/11-NATIVE-PLUGIN-FFI.md), [Manifest design](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/notes/architecture/12-MANIFEST-SYSTEM.md)
+
+**문서 자체도 대조합니다.** 이 revision의 AGENTS/overview 인덱스에는 11·12번이 빠져 있습니다. CLI 문서의 `tauri-bundler` 설명과 달리 현재 [bundler 코드](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/packages/cli/src/bundler/mod.rs#L160)는 내부 플랫폼별 dispatch를 사용합니다. 따라서 형식은 채택하되 문서를 구현 증거로 대신하지 않습니다. 이 저장소의 인덱스 누락은 [기존 문서 검사기](../scripts/check.mjs)에서 확인합니다. 데이터 구조와 실제 코드의 정합성은 별도 리뷰가 필요합니다.
 
 ## 3. AlphaEvolve: 생성·평가·보관을 나누되 공개 범위를 구분한다
 
