@@ -2,9 +2,11 @@
 
 프론티어 코딩 에이전트가 만든 변경을 컴파일러 개발자가 검토하고 유지할 수 있는 형태로 만드는 실험입니다. 생성량보다 **정확한 변경을 검토하는 데 든 사람 작업시간과 재작업**을 봅니다.
 
-공개 `furiosa-opt`의 Rust 예제를 대상으로 실험을 설계했습니다. FuriosaAI와 무관한 개인 연구이며, 내부 컴파일러·CI·승인 체계를 재현한 프로젝트가 아닙니다. **2026-09-14 AWS x86 환경에서 무변경 Rust CPU smoke를 완료했습니다. 지정 assertion 1개가 통과했고 원격 파일 94개의 수거·대조와 생성 자원 삭제를 확인했습니다.** 에이전트 A/B, NPU 측정, 원격 PR CI는 아직 수행하지 않았습니다. [측정 조건과 결과](docs/experiment.md#무변경-cpu-smoke-실행-결과)
+공개 `furiosa-opt`의 Rust 예제를 대상으로 실험을 설계했습니다. FuriosaAI와 무관한 개인 연구이며, 내부 컴파일러·CI·승인 체계를 재현한 프로젝트가 아닙니다. **2026-09-14 AWS x86 환경에서 무변경 Rust CPU smoke를 완료했습니다. 지정 assertion 1개가 통과했고 원격 파일 94개의 수거·대조와 생성 자원 삭제를 확인했습니다.** 에이전트 A/B와 NPU 측정은 아직 수행하지 않았습니다. [측정 조건과 결과](docs/experiment.md#무변경-cpu-smoke-실행-결과)
 
 **후속 double-buffering 정상 CPU 검사와 공개 오류 대조군 검출을 완료했습니다.** 로컬 Docker amd64/Rosetta에서 세 구현·6종 입력의 46,080개 값과 helper 검사 2개가 통과했습니다. 한 줄의 오류를 넣은 별도 checkout은 컴파일 후 예상한 수치 assertion에서 실패했습니다. fmt·표적 Clippy도 통과했습니다. [코드·수치 근거·실행 결과](docs/kernels/double-buffering.md#8-로컬-docker-실행-결과)에 범위와 남은 검사를 구분했습니다. 추가 원격·모델 비교 실험은 [남은 재개 조건](docs/experiment.md#시행-보류와-재개-조건)을 확인한 뒤 승인된 범위에서 진행합니다.
+
+**mapping parser는 문법 → AST → 오류 문구·위치를 묶은 12개 검사와 공개 오류 대조군 검출을 완료했습니다.** 두 진입점의 정상 동작을 확인하고, 허용되지 않은 문법을 추가한 사본에서는 의도한 assertion이 실패했습니다. [계약·patch·재현 명령](docs/quality.md#mapping-parser)을 제공합니다. 후속 [workspace check·Clippy는 통과했지만 release 빌드는 저장공간 한도로 중단](docs/kernels/double-buffering.md#9-후속-workspace-검사와-중단-기록)됐습니다. lab 문서·실행기 CI와 Rust 전체 테스트는 [별도 상태](docs/merge.md#현재-구현과-제안의-경계)로 관리합니다.
 
 ## 먼저 읽을 것
 
@@ -12,7 +14,7 @@
 
 1. [실험 계획](docs/experiment.md): 검사 병렬도 보정, 에이전트 작업 절차 비교, 별도 후속 단일 요인 비교.
 2. [품질 계약](docs/quality.md): 기존 컨벤션, 검사별 보장 범위, 품질 검사·채택 절차.
-3. [실험 시행도와 작업 분기](report/assets/compiler-ax-experiment-approval.html): 준비 조건·실행 권한·검사 후 조치와 회수를 보여 주는 단일 HTML. 미실행 설계이며 기준의 정본은 연결된 MD입니다.
+3. [실험 시행도와 작업 분기](report/assets/compiler-ax-experiment-approval.html): 준비 조건·실행 권한·검사 후 조치와 회수를 보여 주는 단일 HTML. 완료한 CPU 검사와 미실행 A/B 설계를 구별하며 최신 결과의 정본은 연결된 MD입니다.
 4. [PR·병합 절차](docs/merge.md): 검사한 revision, 사람 판단, 병합 후 확인.
 5. [판단 컨텍스트](docs/context.md)와 [1차 출처](docs/sources.md): 채택 이유와 읽은 범위. skill·링크형 wiki 선택과 KG 엔진 보류 이유도 기록합니다.
 6. [원문 사례의 폴더 구조](references/source-layouts.md): 고정 commit의 실제 경로와 공개 범위.
@@ -56,4 +58,4 @@ node report/render-experiment-approval.mjs
 
 기존 개인 작업공간의 원고와 이력은 보존했습니다. 선택한 로컬 참고 자료는 Git에서 제외한 `.local/context/`에 있습니다. 원문 전사·논문 사본·지원 자료·계정 기록·보호 검사 입력·실제 실행 로그는 공개하지 않습니다. `.gitignore`는 접근 통제 수단이 아니므로 보호 검사는 후보와 별도 권한의 실행 환경에 둡니다.
 
-공개 저장소 생성과 문서 게시가 전체 실험이나 Furiosa upstream PR 승인까지 의미하지는 않습니다. 무변경 CPU smoke 다음에는 Rust 실패 대조군·보호 평가 접근·비교 예산을 확정해야 합니다. 준비 검사의 PASS를 새 테스트 보강이나 에이전트 생산성 효과로 확대하지 않습니다.
+공개 저장소 생성과 문서 게시가 전체 실험이나 Furiosa upstream PR 승인까지 의미하지는 않습니다. 공개 Rust 테스트 보강과 의도 오류 검출은 완료했지만, 보호 평가 접근·비교 예산과 A/B 계약은 별도 확정이 필요합니다. 공개 검사의 PASS를 에이전트 생산성 효과로 확대하지 않습니다.

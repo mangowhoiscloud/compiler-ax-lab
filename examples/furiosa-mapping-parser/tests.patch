@@ -1,0 +1,128 @@
+diff --git a/furiosa-mapping-macro/src/parser/diagnostic.rs b/furiosa-mapping-macro/src/parser/diagnostic.rs
+index 0ab5faa..f17321d 100644
+--- a/furiosa-mapping-macro/src/parser/diagnostic.rs
++++ b/furiosa-mapping-macro/src/parser/diagnostic.rs
+@@ -82,7 +82,7 @@ fn display_token(token: &str) -> &str {
+ 
+ #[cfg(test)]
+ mod tests {
+-    use super::super::{parse_index, parse_mapping};
++    use super::super::{Extent, Mapping, Num, parse_index, parse_mapping};
+ 
+     fn tokens(input: &str) -> proc_macro2::TokenStream {
+         input.parse().expect("test input must be tokenizable")
+@@ -100,6 +100,37 @@ mod tests {
+         assert_eq!(error.span().byte_range(), span);
+     }
+ 
++    fn assert_in_both_modes(input: &str, check: impl Fn(&Mapping, &str)) {
++        let mapping =
++            parse_mapping(tokens(input)).unwrap_or_else(|error| panic!("mapping {input:?} must parse: {error}"));
++        check(&mapping, "mapping");
++
++        let index_input = format!("{input}: value");
++        let assignments = parse_index(tokens(&index_input))
++            .unwrap_or_else(|error| panic!("index {index_input:?} must parse: {error}"));
++        assert_eq!(assignments.len(), 1, "index {index_input:?}: assignment count");
++        let assignment = &assignments[0];
++        assert_eq!(
++            assignment.value.to_string(),
++            "value",
++            "index {index_input:?}: value tokens"
++        );
++        check(&assignment.mapping, "index");
++    }
++
++    fn assert_stride_in_both_modes(input: &str, check: impl Fn(&Extent, &str)) {
++        assert_in_both_modes(input, |mapping, mode| {
++            let Mapping::Stride { inner, stride } = mapping else {
++                panic!("{mode} {input:?}: expected Stride, got {mapping:?}");
++            };
++            assert!(
++                matches!(inner.as_ref(), Mapping::Symbol { symbol } if symbol == "A"),
++                "{mode} {input:?}: expected inner Symbol(A), got {inner:?}"
++            );
++            check(stride, mode);
++        });
++    }
++
+     #[test]
+     fn empty_mapping_suggests_unit_mapping() {
+         assert_mapping_error(
+@@ -153,4 +184,76 @@ mod tests {
+             "unexpected end of index expression; expected an index expression",
+         );
+     }
++
++    #[test]
++    fn stride_literal_extent_preserves_ast() {
++        assert_stride_in_both_modes("A / 4", |extent, mode| {
++            assert!(
++                matches!(extent, Extent::Const(Num::Lit(4))),
++                "{mode}: expected Const(Lit(4)), got {extent:?}"
++            );
++        });
++    }
++
++    #[test]
++    fn stride_braced_extent_preserves_ast() {
++        assert_stride_in_both_modes("A / {N}", |extent, mode| {
++            assert!(
++                matches!(extent, Extent::Const(Num::Const(value)) if value.to_string() == "N"),
++                "{mode}: expected Const(Const(tokens N)), got {extent:?}"
++            );
++        });
++    }
++
++    #[test]
++    fn stride_axis_extent_preserves_ast() {
++        assert_stride_in_both_modes("A / B", |extent, mode| {
++            assert!(
++                matches!(extent, Extent::Axis(symbol) if symbol == "B"),
++                "{mode}: expected Axis(B), got {extent:?}"
++            );
++        });
++    }
++
++    #[test]
++    fn stride_mapping_extent_preserves_ast() {
++        assert_stride_in_both_modes("A / (B, C)", |extent, mode| {
++            let Extent::Mapping(mapping) = extent else {
++                panic!("{mode}: expected Mapping extent, got {extent:?}");
++            };
++            let Mapping::Pair { left, right } = mapping.as_ref() else {
++                panic!("{mode}: expected Pair, got {mapping:?}");
++            };
++            assert!(
++                matches!(left.as_ref(), Mapping::Symbol { symbol } if symbol == "B"),
++                "{mode}: expected left Symbol(B), got {left:?}"
++            );
++            assert!(
++                matches!(right.as_ref(), Mapping::Symbol { symbol } if symbol == "C"),
++                "{mode}: expected right Symbol(C), got {right:?}"
++            );
++        });
++    }
++
++    #[test]
++    fn brackets_are_atoms_not_extents() {
++        assert_in_both_modes("[B]", |mapping, mode| {
++            assert!(
++                matches!(mapping, Mapping::Symbol { symbol } if symbol == "B"),
++                "{mode}: expected bracketed atom Symbol(B), got {mapping:?}"
++            );
++        });
++        let message = "unexpected token `[`; expected an axis name, an integer, a braced Rust expression, or `(`";
++        assert_mapping_error("A / [B]", 4..5, message);
++        assert_index_error("A / [B]: value", 4..5, message);
++    }
++
++    #[test]
++    fn incomplete_index_stride_uses_extent_diagnostic() {
++        assert_index_error(
++            "A /",
++            2..3,
++            "unexpected end of index expression; expected an axis name, an integer, a braced Rust expression, or `(`",
++        );
++    }
+ }

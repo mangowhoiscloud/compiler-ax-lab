@@ -19,6 +19,8 @@ const allowed = new Set([
   'examples/furiosa-double-buffering/tests/double_buffering_tests.rs',
   'examples/furiosa-double-buffering/tests/support/double_buffering_reference.rs',
   'examples/furiosa-double-buffering/controls/reuse-first-trf.patch',
+  'examples/furiosa-mapping-parser/tests.patch',
+  'examples/furiosa-mapping-parser/controls/accept-bracket-extent.patch',
   'docs/context.md', 'docs/experiment.md', 'docs/quality.md', 'docs/merge.md', 'docs/sources.md',
   'docs/architecture/00-OVERVIEW.md', 'docs/architecture/01-LOCAL-TRIAL.md',
   'docs/architecture/02-REMOTE-EXECUTION.md',

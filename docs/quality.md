@@ -1,6 +1,6 @@
 # 품질 계약: 통과한 검사가 무엇을 보장하는가
 
-**[추론: 파일럿 적용 기준]** 이 문서는 과제에 공통으로 적용할 코드 관례·검사·채택 기준을 정한다. 기존 명령을 재사용하되 실행 누락과 잘못된 판정 때문에 정상처럼 보이는 변경을 구별한다. 첫 과제의 동작·허용 변경·소스·실행 분기는 [double-buffering 테스트 계약](kernels/double-buffering.md)에 둔다. 근거는 [Furiosa·Dioxus·Rust 원문 대장](sources.md)에 있다. 2026-09-14 무변경 Rust CPU smoke는 완료했으며, 아래 전체 품질 검사·원격 PR CI·A/B는 아직 실행하지 않았다. [실행 결과](experiment.md#무변경-cpu-smoke-실행-결과)
+**[추론: 파일럿 적용 기준]** 이 문서는 과제에 공통으로 적용할 코드 관례·검사·채택 기준을 정한다. 기존 명령을 재사용하되 실행 누락과 잘못된 판정 때문에 정상처럼 보이는 변경을 구별한다. 첫 과제의 동작·허용 변경·소스·실행 분기는 [double-buffering 테스트 계약](kernels/double-buffering.md)에 둔다. 근거는 [Furiosa·Dioxus·Rust 원문 대장](sources.md)에 있다. AWS CPU smoke, 두 공개 사례의 표적 검사와 workspace check·Clippy는 완료했다. 전체 release 빌드는 저장공간 한도로 중단됐고 전체 Rust 테스트·A/B·NPU 검사는 미실행이다. [후속 실행 기록](kernels/double-buffering.md#9-후속-workspace-검사와-중단-기록)과 [lab CI](merge.md#현재-구현과-제안의-경계)를 별도로 확인한다.
 
 ### 입력과 수치 계약
 
@@ -71,15 +71,46 @@ cargo test -p furiosa-opt-examples --release --test binary_add_tests -- --exact 
 
 `cargo furiosa-opt compile`은 선택 kernel의 번역·mapping/shape를 확인하는 별도 검사입니다. host 값 검사와 정적 compile·target 산출물·장치 검사 중 무엇이 필요한지는 해당 과제 계약으로 정합니다. CPU smoke에 NPU ELF 생성용 cross toolchain이나 장치 실행을 자동으로 포함하지 않습니다.
 
-### 별도 과제 후보: mapping 문법과 진단의 일치
+### Mapping parser
 
-**상태: 공개 소스 기반 과제 준비이며 미실행입니다.** 기존 double-buffering 과제와 수치·판정 단위를 공유하지 않습니다. 목적은 mapping 문법, 생성된 AST, 오류 위치·안내가 같은 계약을 따르는지 검사하는 것입니다. [고정 문법·진단과 리뷰 근거](sources.md#공개-agent-지침과-리뷰에서-채택한-규칙)
+**상태: 2026-09-15 KST 정상 12개 통과·공개 오류 대조군 검출 완료.** parse 성공만 검사하면 정수 크기·상수식·축·mapping이 잘못된 AST로 바뀌어도 놓칠 수 있습니다. 반대로 오류 문자열만 비교하면 문법이 실제로 허용하는 입력이나 지목한 위치가 달라진 것을 알기 어렵습니다. 따라서 같은 입력에서 **수용 여부 → 정확한 AST 구조 또는 오류 문구·span**을 함께 검사합니다. double-buffering의 수치 검사와 별개 사례입니다.
 
-1. **대상:** 같은 `9b9cf0f`의 `furiosa-mapping-macro/src/parser/`를 읽습니다. 허용 변경은 해당 crate의 테스트와 필요한 테스트 helper·설명부터 정합니다. 제품 문법·진단 구현 수정이 필요하면 별도 bug-fix 범위로 합의합니다. 여기서 DSL parser는 검증 대상이며 후보 밖의 보호 판정기가 아닙니다.
-2. **정상·오류를 함께 확인:** 개발용 예시 `A / 4`, `A / {N}`, `A / B`, `A / (B, C)`는 parse 성공뿐 아니라 기대 AST를 확인합니다. `A /`, `A / [B]`는 예상 거절 위치와 diagnostic을 대조합니다. 오류 문자열 snapshot 갱신만으로 완료하지 않습니다. 문법상 불법, 적법하지만 미지원, 도구 준비 실패를 구별합니다.
-3. **실행 준비:** 표적 명령 후보는 `cargo test -p furiosa-mapping-macro --lib --release`입니다. 실제 test 목록·선택 수·toolchain·lockfile·명령 한도를 고정한 후 호환 환경에서 무변경 baseline부터 확인합니다. macro crate의 직접 의존성만 보고 전체 workspace 또는 ARM host가 검증됐다고 쓰지 않습니다. 이번 문서는 명령 성공을 기록한 receipt가 아닙니다.
-4. **판정:** 기대 거절을 검사하는 테스트는 해당 진단·위치 assertion이 통과해야 합니다. 무관한 Cargo build 실패를 거절 성공으로 세지 않습니다. 정상 입력의 잘못된 거절과 불법 입력의 잘못된 수용을 별도로 기록합니다. 정적 device compile·CPU 값·NPU 검사는 이 parser 검사와 합산하지 않습니다.
-5. **비교 전 조건:** 공개된 진단 수정과 위 예시는 개발용입니다. 미공개 대조군·입력·판정 단위·평가 개입·담당자를 별도로 고정하고 기존 실험 계약을 개정하기 전에는 A/B를 시작하지 않습니다. 현재 `trial.py --task furiosa`의 중단 경로를 우회하거나 Python 데모 판정을 Rust 결과에 적용하지 않습니다.
+대상은 `furiosa-opt` commit `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`의 mapping macro입니다. [문법](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-mapping-macro/src/parser/parser.lalrpop), [AST·parser](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-mapping-macro/src/parser/mod.rs), [진단·기존 검사](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-mapping-macro/src/parser/diagnostic.rs)를 직접 대조했습니다. `m!`와 `i!`는 서로 다른 진입 규칙에서 같은 Extent 문법을 사용하므로 두 경로를 검사합니다. index 구분자는 `:`이며 assignment 1개와 값 토큰 `value`의 보존도 확인합니다.
+
+| 입력 — index에서는 뒤에 `: value` | 보존할 AST: `Stride(Symbol(A), extent)`의 extent |
+|---|---|
+| `A / 4` | `Const(Lit(4))` |
+| `A / {N}` | `Const(Const(tokens N))`; 외곽 중괄호는 토큰에 남지 않음 |
+| `A / B` | `Axis(B)`; 숫자 상수로 바꾸지 않음 |
+| `A / (B, C)` | `Mapping(Pair(Symbol(B), Symbol(C)))`; 좌우 순서 보존 |
+
+`[B]`는 양쪽 진입점에서 `Symbol(B)`인 정상 atom입니다. 그러나 `A / [B]`는 Extent의 허용 문법이 아니므로 양쪽 모두 **4..5의 `[`**를 지목하고 `unexpected token \`[\`; expected an axis name, an integer, a braced Rust expression, or \`(\``를 반환해야 합니다. `A /`의 EOF 진단은 mapping/index 모드를 구별하며 **2..3의 마지막 `/`**를 지목합니다. 문자열 끝 위치를 임의로 기대값에 넣지 않습니다. 이 범위는 0-based, 끝 미포함 byte range입니다.
+
+1. **변경 제한:** 기존 `diagnostic.rs`의 `cfg(test)` 안에만 helper 2개·테스트 6개를 더합니다. 기존 6개는 유지합니다. 제품 문법·AST·진단·dependency와 lock은 바꾸지 않습니다. 제품 결함이 드러나면 별도 bug-fix 범위를 확정합니다. 검증 대상 DSL parser와 보호 평가 판정기는 다른 코드입니다.
+2. **순차 실행:** 무변경 crate 6개 → 후보 12개의 발견·실행 수를 확인하고, 고정 nightly의 fmt와 표적 release Clippy를 실행합니다. `cargo test --offline --locked -p furiosa-mapping-macro --lib --release`를 재사용하며 새 프레임워크는 없습니다. 도구·소스·바이너리·원문·exit/capture exit를 같은 실행 기록에 남깁니다.
+3. **판별력 확인:** 별도 공개 대조군에만 Extent의 대괄호 수용 규칙을 한 줄 추가합니다. 이 사본이 컴파일된 뒤 `brackets_are_atoms_not_extents` 정확히 1개가 잘못된 수용을 검출해야 합니다. 정상 검사는 두 진입점을 확인하지만, 대조군은 mapping assertion에서 먼저 실패하므로 index 경로의 독립 검출까지 주장하지 않습니다. build 실패·0 tests·OOM·누락 증거를 검출로 세지 않습니다. 의도적으로 만든 오류이며 upstream 결함이나 비공개 평가가 아닙니다.
+4. **주장 범위:** 토큰화 가능한 공개 DSL 입력의 AST와 `syn::Error` 문구·위치를 검사합니다. Rust 타입 검사·macro 확장 전체·mapping 실행·NPU lowering을 증명하지 않습니다. 모델 A/B, 미지 결함 검출률과 사람 채택은 별도입니다. 보호 평가 계약을 추가하기 전에는 이 공개 입력을 A/B의 최종 평가로 재사용하지 않습니다.
+
+#### 실행 결과와 재현
+
+run `compiler-followup-20260915-iGJZ5Q`에서 앞선 double-buffering과 같은 Ubuntu 24.04 amd64/Rosetta·nightly-2026-05-01을 사용했습니다. 한도는 2 CPU·6 GiB, Cargo jobs=1·test threads=1이며 의존성 준비 후 네트워크를 끊었습니다. 무변경 baseline은 6 passed, [테스트 patch](../examples/furiosa-mapping-parser/tests.patch)를 적용한 후보는 **12 passed·0 failed·0 ignored**였습니다. 네 Extent 형태의 AST 8회와 정상 bracket atom 2회는 두 진입점에서 확인했습니다. 기존 diagnostic 6개와 추가 오류 사례도 같은 테스트 안에서 실행됐습니다.
+
+고정 nightly의 `cargo fmt --all -- --check`와 `cargo clippy --offline --locked -p furiosa-mapping-macro --all-targets --release -- -D warnings`는 모두 command/capture exit 0입니다. [공개 오류 patch](../examples/furiosa-mapping-parser/controls/accept-bracket-extent.patch)를 더한 별도 사본도 컴파일·12개 발견까지 성공한 뒤 지정 검사 **1 failed·11 filtered·command exit 101·capture exit 0**을 기록했습니다. 허용되지 않은 `A / [B]`가 `Stride(Symbol(A), Mapping(Symbol(B)))`로 파싱됐다는 원문 assertion이 실패 원인입니다.
+
+재현은 호환 x86-64 Linux의 고정 checkout에서 진행합니다. 아래 patch 경로는 내려받은 lab 파일의 실제 경로로 지정합니다. 정상 후보와 오류 사본의 target directory를 분리하고, lock·실행 수·원문 오류를 함께 확인합니다.
+
+```bash
+git apply --check /path/to/compiler-ax-lab/examples/furiosa-mapping-parser/tests.patch
+git apply /path/to/compiler-ax-lab/examples/furiosa-mapping-parser/tests.patch
+cargo +nightly-2026-05-01 fmt --all -- --check
+cargo +nightly-2026-05-01 test --offline --locked -p furiosa-mapping-macro --lib --release -- --list
+cargo +nightly-2026-05-01 test --offline --locked -p furiosa-mapping-macro --lib --release -- --nocapture --test-threads=1
+cargo +nightly-2026-05-01 clippy --offline --locked -p furiosa-mapping-macro --all-targets --release -- -D warnings
+```
+
+별도 checkout에 두 patch를 적용한 뒤 같은 test 명령의 필터를 `parser::diagnostic::tests::brackets_are_atoms_not_extents --exact`로 지정합니다. 예상한 assertion 실패만 대조군 검출입니다. 실제 실행에서는 공용 cache를 사용했으므로 변경 파일의 mtime 갱신·재컴파일 로그·서로 다른 정상/오류 바이너리 hash를 대조했습니다. 보존한 정상 바이너리는 `0716f486f913d879c2e161b3ee15ef2f10dbac87950f03d75bfdda459f112e40`, 오류 바이너리는 `2dabf508e0480f7611e5d7f7f2ca740da25231d6dd568aef9669f600ee58c0b8`입니다. Cargo.lock은 무변경이며 정상 소스는 오류 실험 후에도 동일합니다.
+
+Git ownership 준비 실패 두 번과 첫 후보의 줄바꿈 포맷 실패도 별도 기록으로 보존했습니다. ownership은 worker 안의 사본에만 맞췄고 formatter가 요구한 두 곳만 고쳤습니다. 검사 기대값은 바꾸지 않았습니다. baseline·정상·오류의 stdout/stderr·명령·exit/capture exit·PTY와 두 바이너리는 Git 제외 실행 폴더에 남겼습니다. 이는 기존 Rust 테스트 구조를 보강한 공개 사례이며 새로운 parser framework나 vendor 제품 변경은 아닙니다.
 
 ### Dioxus에서 옮길 것은 탐색 실패를 작은 회귀 검사로 남기는 방식이다
 

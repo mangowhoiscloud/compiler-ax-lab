@@ -145,3 +145,19 @@ run `docker-cpu-validation-20260914-q7dp65jv`의 최종 정상 실행은 2026-09
 원문 stdout/stderr·단계별 exit/capture exit·GNU time·PTY 재생 기록·최종 소스와 두 바이너리는 Git 제외 실행 폴더에 보존합니다. 검증기는 누락·중복 case, 잘린 배열, 수치 오류, 수집 실패, 컴파일 오류를 거부하는 자체 검사 8개를 통과했습니다. 이 검증기 통과만으로 소스/바이너리 연결이나 사람의 채택을 대신하지 않습니다. 로컬 작업은 container UID 0으로 실행했으며, 보호 평가·악의적 후보 격리가 입증된 환경으로 주장하지 않습니다.
 
 수거한 두 바이너리와 오류 소스의 hash를 원본과 대조한 뒤 이번 worker·probe 컨테이너 3개를 삭제하고 잔존 0개를 확인했습니다. 원문 기록·이미지는 보존했고 기존 Kubernetes 컨테이너 3개는 중지 상태로 유지했습니다. 새 클라우드 자원·유료 API·원격 PR 변경·병합은 수행하지 않았습니다.
+
+## 9. 후속 workspace 검사와 중단 기록
+
+run `compiler-followup-20260915-iGJZ5Q`는 같은 upstream pin·Cargo.lock과 공개 double-buffering 테스트 두 파일을 새 worker에서 검사했습니다. Ubuntu 24.04 amd64/Rosetta·2 CPU·6 GiB·Cargo jobs=1이며 의존성 준비 뒤 네트워크를 끊었습니다. 앞 run의 결과나 cache가 있다는 이유로 전체 검사를 통과 처리하지 않았습니다.
+
+| 명령·단계 | 실제 결과 |
+|---|---|
+| 기록기 회귀·`cargo fmt --all -- --check` | command/capture exit 0 |
+| `cargo check --offline --locked --workspace --all-targets` | PASS, command/capture exit 0; 6분 04초 |
+| `cargo clippy --offline --locked --workspace --all-targets -- -D warnings` | PASS, command/capture exit 0; 1분 41초 |
+| `cargo test --offline --locked --workspace --release --no-run` | INTERRUPTED: host 여유 공간 6 GiB 하한 도달. 완료 exit/capture receipt 없음 |
+| 전체 workspace test | NOT_RUN: release 빌드가 완료되지 않음 |
+
+2026-09-14 16:35:35 UTC에 여유 공간이 6,240,176 KiB로 내려가 감시 스크립트가 이 worker만 중지했습니다. `docker exec`는 137로 끝났지만 Docker `OOMKilled=false`였으며, 이를 컴파일러 오류나 메모리 OOM으로 분류하지 않았습니다. 중단 전 원문과 부분 산출물은 보존했습니다. 전체 빌드를 다시 시작하거나 시간 상한을 늘리지 않고, 이번 worker의 재생성 가능한 SDK cache만 정리한 뒤 같은 한도 안에서 작은 [parser 검사](../quality.md#mapping-parser)를 완료했습니다.
+
+parser의 정상·오류 바이너리와 소스·원문을 대조한 뒤 후속 worker를 중지·삭제했습니다. Kubernetes 노드 세 개는 사용자 확인에 따라 중지하고 restart policy를 `no`로 변경했습니다. 다른 작업의 이미지·volume·소스·채팅과 이전 실행 증거는 삭제하지 않았습니다. lab 원격 PR CI는 [별도 기록](../merge.md#현재-구현과-제안의-경계)이며, Rust 전체 검사·NPU 실행·병합·릴리스 완료를 대신하지 않습니다.
