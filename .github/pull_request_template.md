@@ -10,9 +10,11 @@
 ## Revision
 
 - Baseline SHA:
+- 병합 경로 (feature → dev / dev → main):
 - PR head SHA:
 - PR base SHA:
 - 실제 검사 checkout SHA (head와 test merge를 구분):
+- 진행 중 게시라면 기준 시각 / 완료·실행 중·미실행 / 다음 갱신 조건:
 
 ## 검증
 
@@ -40,6 +42,6 @@
 
 ## 병합 이후
 
-- `main` post-merge run (병합 후 기록):
+- 대상 브랜치의 post-merge run (dev / main; 병합 후 기록):
 - 회귀 시 수정 / revert 경로:
 - 릴리스·유료 실행·Furiosa upstream 제출 승인: 별도이며 이 PR 승인에서 추론하지 않습니다.

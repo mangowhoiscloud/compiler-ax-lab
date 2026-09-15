@@ -1,19 +1,16 @@
 // Document/publication checks only. Not a compiler or agent-evaluation oracle.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { readFileSync, existsSync, lstatSync, realpathSync } from 'node:fs';
+import { resolve, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import '../report/check-experiment-plan.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const allowed = new Set([
   '.gitignore', 'README.md', 'AGENTS.md', '.github/CODEOWNERS',
   '.github/pull_request_template.md', '.github/workflows/quality.yml',
-  'program.md', '.agents/skills/run-bounded-change-loop/SKILL.md', 'references/source-layouts.md',
-  'references/frontier-engineering-2026.md',
+  'program.md', '.agents/skills/run-bounded-change-loop/SKILL.md',
   '.agents/skills/review-to-verified-pr/SKILL.md',
-  '.agents/skills/review-to-verified-pr/references/review-evidence.md',
   'scripts/trial.py', 'tests/test_trial.py',
   'examples/group-reduction/candidate.py', 'examples/group-reduction/check.py',
   'examples/furiosa-double-buffering/tests/double_buffering_tests.rs',
@@ -21,70 +18,120 @@ const allowed = new Set([
   'examples/furiosa-double-buffering/controls/reuse-first-trf.patch',
   'examples/furiosa-mapping-parser/tests.patch',
   'examples/furiosa-mapping-parser/controls/accept-bracket-extent.patch',
-  'docs/context.md', 'docs/experiment.md', 'docs/quality.md', 'docs/merge.md', 'docs/sources.md',
-  'docs/architecture/00-OVERVIEW.md', 'docs/architecture/01-LOCAL-TRIAL.md',
-  'docs/architecture/02-REMOTE-EXECUTION.md',
-  'docs/kernels/double-buffering.md',
-  'docs/token-factory-sandbox.md',
-  'scripts/check.mjs', 'report/check-experiment-plan.mjs', 'report/render-experiment-approval.mjs',
-  'report/assets/compiler-ax-experiment-approval.html',
-  ...[1, 2, 3].map(i => `report/assets/compiler-ax-experiment-approval-${i}.png`),
+  'docs/quality.md', 'docs/merge.md', 'docs/kernels/double-buffering.md',
+  'scripts/check.mjs',
 ]);
-const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: root })
-  .toString().split('\0').filter(Boolean);
-assert.equal(new Set(files).size, allowed.size, 'Missing or unexpected public file');
 const sensitive = /(?:\/Users\/|\/home\/)[\w.-]+\/|file:\/\/|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{24,}|-----BEGIN [A-Z ]*PRIVATE KEY-----/;
-assert.ok(sensitive.test('/' + ['Users', 'example', 'private'].join('/')), 'Path check self-test');
-assert.ok(!allowed.has('.local/private.md'), 'Private scope self-test');
-for (const file of files) {
-  assert.ok(allowed.has(file), `Not in public allowlist: ${file}`);
-  const bytes = readFileSync(resolve(root, file));
-  if (file.endsWith('.png')) {
-    assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
-    continue; // Rendered figures need separate visual review.
+
+// This repository uses inline/reference links and ATX headings. Ignore fenced
+// examples when discovering links/headings, but still scan all bytes for secrets.
+function markdownBody(text) {
+  let fence = null;
+  return text.split('\n').filter(line => {
+    const marker = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
+    if (marker && !fence) { fence = marker[1]; return false; }
+    if (marker && fence && marker[1][0] === fence[0] && marker[1].length >= fence.length) {
+      fence = null; return false;
+    }
+    return !fence;
+  }).join('\n');
+}
+function links(text) {
+  return [...markdownBody(text).matchAll(/\]\(([^)]+)\)|href=["']([^"']+)["']|^\[[^\]]+\]:\s*(\S+)/gm)]
+    .map(match => (match[1] || match[2] || match[3]).replace(/^<(.+)>$/, '$1'));
+}
+function anchors(text) {
+  const body = markdownBody(text);
+  const ids = new Set([...body.matchAll(/\bid=["']([^"']+)["']/g)].map(match => match[1]));
+  for (const match of body.matchAll(/^ {0,3}#{1,6}\s+(.+?)\s*#*\s*$/gm)) {
+    const base = match[1].replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/<[^>]+>/g, '')
+      .toLowerCase().replace(/[^\p{L}\p{N}\p{M}_\-\s]/gu, '').replace(/\s/g, '-');
+    let id = base, suffix = 0;
+    while (ids.has(id)) id = `${base}-${++suffix}`;
+    ids.add(id);
   }
-  const text = bytes.toString('utf8');
-  assert.ok(!sensitive.test(text), `Sensitive-looking text: ${file}`);
-  assert.ok(!text.includes('\r'), `Non-LF line endings: ${file}`);
-  if (!/\.(md|html)$/.test(file)) continue;
-  assert.ok(!text.includes('[['), `Unresolved wiki link: ${file}`);
-  const links = [...text.matchAll(/\]\(([^)]+)\)|href="([^"]+)"/g)];
-  for (const match of links) {
-    const href = match[1] || match[2];
-    if (/^(https?:|mailto:|#)/.test(href)) continue;
-    const target = resolve(dirname(resolve(root, file)), decodeURIComponent(href.split('#')[0]));
-    assert.ok(target.startsWith(root) && existsSync(target), `Broken or escaping link: ${file} -> ${href}`);
-  }
+  return ids;
+}
+function publicTarget(file, href) {
+  const [pathname, fragment] = href.split('#');
+  const target = pathname ? resolve(dirname(resolve(root, file)), decodeURIComponent(pathname)) : resolve(root, file);
+  const name = relative(root, target);
+  assert.ok(allowed.has(name) || [...allowed].some(page => page.startsWith(`${name}/`)),
+    `Link outside public files: ${file} -> ${href}`);
+  return {target, name, fragment: fragment === undefined ? null : decodeURIComponent(fragment)};
+}
+function requireAnchor(text, anchor) {
+  assert.ok(anchors(text).has(anchor), `Missing Markdown anchor: ${anchor}`);
 }
 // Keep entrypoint routes complete; content/code agreement still needs review.
 function checkIndexLinks(index, pages) {
-  const links = new Set([...index.matchAll(/\]\(([^)#]+)(?:#[^)]*)?\)/g)].map(match => match[1]));
-  for (const page of pages) assert.ok(links.has(page), `Page missing from index: ${page}`);
+  const targets = new Set(links(index).map(href => href.split('#')[0]));
+  for (const page of pages) assert.ok(targets.has(page), `Page missing from index: ${page}`);
 }
+
+assert.ok(sensitive.test('/' + ['Users', 'example', 'private'].join('/')), 'Path check self-test');
+assert.ok(sensitive.test('sk-' + 'x'.repeat(24)), 'Secret check self-test');
+assert.equal(allowed.size, 22, 'Public contract size');
+assert.ok(!allowed.has('.local/private.md'), 'Private scope self-test');
 checkIndexLinks('[Page](01.md#entry)', ['01.md']);
 assert.throws(() => checkIndexLinks('[Page](01.md)', ['02.md']), /missing from index/);
-const architecture = files.filter(file => file.startsWith('docs/architecture/') && file.endsWith('.md'));
-const indexPath = 'docs/architecture/00-OVERVIEW.md';
-checkIndexLinks(readFileSync(resolve(root, indexPath), 'utf8'),
-  architecture.filter(file => file !== indexPath).map(file => file.slice('docs/architecture/'.length)));
+assert.equal(publicTarget('AGENTS.md', 'docs/quality.md#mapping-parser').name, 'docs/quality.md');
+assert.throws(() => publicTarget('AGENTS.md', '.local/private.md'), /outside public/);
+assert.throws(() => publicTarget('AGENTS.md', '../outside.md'), /outside public/);
+const anchorSample = '## 3. 코드와 `State`\n## Same\n## Same\n```md\n# Hidden\n```\n';
+assert.deepEqual([...anchors(anchorSample)], ['3-코드와-state', 'same', 'same-1']);
+requireAnchor(anchorSample, 'same-1');
+assert.throws(() => requireAnchor(anchorSample, 'hidden'), /Missing Markdown anchor/);
+assert.throws(() => requireAnchor(anchorSample, 'absent'), /Missing Markdown anchor/);
+assert.ok(process.argv.length === 2 || (process.argv.length === 3 && process.argv[2] === '--self-test'),
+  'Usage: node scripts/check.mjs [--self-test]');
+if (process.argv[2] === '--self-test') {
+  console.log(JSON.stringify({ status: 'PASS', scope: 'inline public-path, secret, link and anchor regressions; no repository scan' }));
+  process.exit(0);
+}
+
+const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: root })
+  .toString().split('\0').filter(Boolean);
+assert.deepEqual([...new Set(files)].sort(), [...allowed].sort(), 'Missing or unexpected public file');
+const texts = new Map();
+for (const file of files) {
+  const full = resolve(root, file);
+  assert.ok(existsSync(full), `Missing public file: ${file}`);
+  assert.ok(lstatSync(full).isFile() && !lstatSync(full).isSymbolicLink(), `Not a regular public file: ${file}`);
+  assert.equal(realpathSync(full), full, `Symlink ancestor in public file: ${file}`);
+  const text = readFileSync(full, 'utf8');
+  texts.set(file, text);
+  assert.ok(!sensitive.test(text), `Sensitive-looking text: ${file}`);
+  assert.ok(!text.includes('\r'), `Non-LF line endings: ${file}`);
+}
+for (const [file, text] of texts) {
+  if (!file.endsWith('.md')) continue;
+  assert.ok(!text.includes('[['), `Unresolved wiki link: ${file}`);
+  for (const href of links(text)) {
+    if (/^(https?:|mailto:)/.test(href)) continue;
+    const {target, name, fragment} = publicTarget(file, href);
+    assert.ok(existsSync(target), `Broken link: ${file} -> ${href}`);
+    assert.equal(realpathSync(target), target, `Symlink link target: ${file} -> ${href}`);
+    if (fragment !== null) {
+      assert.ok(name.endsWith('.md') && texts.has(name), `Anchor target is not Markdown: ${file} -> ${href}`);
+      requireAnchor(texts.get(name), fragment);
+    }
+  }
+}
 const agents = readFileSync(resolve(root, 'AGENTS.md'), 'utf8');
-assert.ok(agents.includes(`](${indexPath})`), 'AGENTS must route to the architecture index');
-for (const section of ['## 3. 코드와 커밋의 컨벤션', '## 4. 공개 리뷰를 실행 가능한 요구로 바꾼다',
-  '## 5. 변경을 검사하고 인계한다']) assert.ok(agents.includes(section), `Missing agent convention section: ${section}`);
-checkIndexLinks(agents, files.filter(file => file.startsWith('.agents/skills/') && file.endsWith('/SKILL.md')));
-const kernels = files.filter(file => file.startsWith('docs/kernels/') && file.endsWith('.md'));
-checkIndexLinks(agents, kernels);
-checkIndexLinks(readFileSync(resolve(root, indexPath), 'utf8'), kernels.map(file => file.replace('docs/', '../')));
+const skillPages = files.filter(file => file.startsWith('.agents/skills/') && file.endsWith('/SKILL.md'));
+checkIndexLinks(agents, [...skillPages, 'program.md', 'docs/quality.md', 'docs/merge.md', 'docs/kernels/double-buffering.md']);
+checkIndexLinks(readFileSync(resolve(root, '.agents/skills/run-bounded-change-loop/SKILL.md'), 'utf8'),
+  ['../../../program.md']);
 checkIndexLinks(readFileSync(resolve(root, '.agents/skills/review-to-verified-pr/SKILL.md'), 'utf8'),
-  kernels.map(file => `../../../${file}`));
-const html = readFileSync(resolve(root, 'report/assets/compiler-ax-experiment-approval.html'), 'utf8');
-assert.deepEqual([...html.matchAll(/data-quality="([a-z-]+)"/g)].map(m => m[1]),
-  ['contract-environment', 'scope-code-quality', 'output-behavior', 'integration-docs', 'independent-final', 'human-adoption']);
-for (const anchor of [...html.matchAll(/href="#([^"]+)"/g)].map(m => m[1])) assert.ok(html.includes(`id="${anchor}"`));
+  ['../../../docs/quality.md', '../../../docs/merge.md', '../../../docs/kernels/double-buffering.md']);
 const pr = readFileSync(resolve(root, '.github/pull_request_template.md'), 'utf8');
 for (const field of ['Baseline SHA', 'PR head SHA', 'PR base SHA', 'checkout SHA', 'NOT_RUN', 'post-merge', '사람 검토',
   '관련 리뷰 요구', '환경 확인 근거', '실패 후 남은 상태', '기대 거절과 도구 실패']) assert.ok(pr.includes(field), field);
 const workflow = readFileSync(resolve(root, '.github/workflows/quality.yml'), 'utf8');
-for (const fragment of ['always()', 'needs: [lab-docs]', 'contents: read', 'node scripts/check.mjs', 'test "$DOCS_RESULT" = success']) assert.ok(workflow.includes(fragment), fragment);
+for (const fragment of ['always()', 'needs: [lab-docs]', 'contents: read', 'persist-credentials: false',
+  'branches: [dev, main]',
+  'node scripts/check.mjs', 'python3 -m unittest discover -s tests -v', 'test "$DOCS_RESULT" = success']) assert.ok(workflow.includes(fragment), fragment);
 assert.ok(!workflow.includes('pull_request_target'), 'Do not run PR code with a privileged event');
-console.log(JSON.stringify({ status: 'PASS', publicFiles: files.length, architecturePages: architecture.length, qualityStages: 6, scope: 'local docs, public paths and illustrative arithmetic; no Rust/cloud run' }));
+console.log(JSON.stringify({ status: 'PASS', publicFiles: files.length, skillRoutes: skillPages.length,
+  scope: 'public files, Markdown links/anchors and workflow contracts; no Rust/cloud run' }));

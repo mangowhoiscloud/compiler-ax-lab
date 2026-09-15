@@ -1,48 +1,39 @@
 ---
 name: review-to-verified-pr
-description: Turn public code reviews into scoped requirements, implement requested Compiler AX Lab changes, and hand off a revision-verified Draft PR when authorized. Use for this repository's review, change and PR workflow, not local trial execution or cloud provisioning.
+description: Review or change Compiler AX Lab code and contracts, then verify authorized feature-to-dev and dev-to-main PRs against their current revisions. Not a cloud provisioner or automatic merge service.
 ---
 
 # Review to verified PR
 
-이 저장소의 운영자용 스킬입니다. 기존 Git·검사·PR을 사용하며 별도 실행 엔진을 만들지 않습니다. 조회·진단 요청은 보고에서 끝내고, 변경·push·PR 작성은 사용자가 요청한 범위에서만 수행합니다. 스킬 선택 자체는 실행 권한이 아닙니다.
+이 저장소의 운영자용 스킬입니다. 기존 Git·검사·PR을 사용합니다. 조사·진단만 요청받았다면 보고에서 끝내고 변경·게시·병합으로 확대하지 않습니다.
 
-## 1. 요청한 경로만 읽는다
+## 1. 필요한 계약만 읽는다
 
-| 요청 | 필요한 상세 자료 | 여기서 끝낼 조건 |
-|---|---|---|
-| 공개 리뷰·조직 기준 조사 | [리뷰 근거 수집](references/review-evidence.md) | 확인한 요구·미확인 범위 보고; 구현으로 자동 진행하지 않음 |
-| 프론티어 사례·탐색 설계 정렬 | [2026 사례와 채택 경계](../../../references/frontier-engineering-2026.md) | 발표·실험 날짜와 평가 범위 대조; 요청한 규약만 수정하고 실험·원격 반영으로 확대하지 않음 |
-| 문서·코드 변경 | [공통 컨벤션](../../../AGENTS.md#3-코드와-커밋의-컨벤션), [검사·인계](../../../AGENTS.md#5-변경을-검사하고-인계한다), 해당 실제 파일 | 요청한 diff와 검사 결과; 원격 반영 요청이 없으면 로컬에서 인계 |
-| double-buffering 이해·테스트·커널 변경 | [아래 분기](#커널-작업의-분기) → [공개 커널 계약](../../../docs/kernels/double-buffering.md) | 목적과 허용 파일을 먼저 판별; 기준 변경·원격 실행으로 자동 확대하지 않음 |
-| 원격 반영·PR 검사 | [병합 규약](../../../docs/merge.md), [PR 템플릿](../../../.github/pull_request_template.md), [실제 CI](../../../.github/workflows/quality.yml) | 현재 revision의 원격·검사 상태 보고; 병합은 별도 요청 |
+- 공통 변경은 [AGENTS.md](../../../AGENTS.md#3-코드와-커밋의-컨벤션)와 실제 코드·직접 호출자·테스트를 읽습니다.
+- Rust는 [품질 계약](../../../docs/quality.md), double-buffering은 [커널 계약](../../../docs/kernels/double-buffering.md)을 추가로 읽습니다.
+- 원격 반영은 [병합 규약](../../../docs/merge.md), [PR 템플릿](../../../.github/pull_request_template.md), [실제 CI](../../../.github/workflows/quality.yml)를 읽습니다.
+- 공개 리뷰 조사가 요청된 경우에만 원문·당시 코드·후속 diff·검사를 연결합니다. resolved 표시만으로 해결을 확정하지 않고 부분 수집·미확인을 밝힙니다. 프로젝트별 외부 명령을 자동 실행하지 않습니다.
 
-리뷰 근거가 필요한 변경에서만 첫 경로를 함께 읽습니다. 단순 문서 수정이나 기존 PR 동기화에 외부 리서치를 강제하지 않습니다. 로컬 후보 데모 실행은 [run-bounded-change-loop](../run-bounded-change-loop/SKILL.md)로 넘기고, 설계·Rust·원격 환경 요청은 [AGENTS의 해당 경로](../../../AGENTS.md#1-요청에-맞는-경로를-고른다)를 선택합니다. 전체 위키·원문을 선행 로드하지 않습니다.
+로컬 Python 데모 실행은 [run-bounded-change-loop](../run-bounded-change-loop/SKILL.md)에 맡깁니다. 전체 조사 자료나 이 스킬을 A/B 후보에게 통째로 전달하지 않습니다.
 
-## 2. 관측에서 변경과 검사로 연결한다
+## 2. 커널 작업의 분기
 
-### 커널 작업의 분기
+1. **읽기·진단:** source pin·입출력·데이터 이동을 실제 코드로 확인하고 관측과 가설을 보고합니다.
+2. **테스트 보강:** 허용 파일·독립 기대값·정상/오류 검사부터 고정합니다. 첫 과제는 제품 커널을 바꾸지 않습니다. 호환 환경·권한이 없으면 `NOT_RUN` 사유를 남깁니다.
+3. **제품 구현:** 기존 범위를 넘는 이유와 변경할 mapping·메모리·schedule·API를 합의합니다. 관련 의미·소유권·ABI 의무에 맞는 검사를 선택합니다. CPU 결과로 NPU 검사를 대신하지 않습니다.
+4. **판정기 변경:** 후보 수정을 멈추고 별도 기준 검토로 분리합니다. 새 기준과 기존 비교를 혼합하지 않습니다.
+5. **원격 실행:** 비용·시간·권한·실제 도구·회수 담당자가 확인된 승인 범위만 실행합니다. 공개 checkout에 없는 운영자 실행기를 추측하거나 새 환경을 자동 생성하지 않습니다.
 
-1. **읽기·진단 요청이면** 커널 계약에서 source pin·입출력·데이터 이동을 읽고 원문 코드로 확인합니다. 확인한 사실과 가설을 보고하며 파일 수정·실행으로 넘어가지 않습니다.
-2. **테스트 보강 요청이면** 같은 계약의 공개 요구와 [공통 품질 기준](../../../docs/quality.md)을 읽습니다. 첫 과제에서는 세 구현을 바꾸지 않고 테스트·관련 설명만 수정합니다. 호환 환경·검사 연결·실행 승인이 없으면 검사 계획과 `NOT_RUN` 사유에서 멈춥니다. Python 데모를 Rust 실행 경로로 사용하지 않습니다.
-3. **커널 구현까지 바꿔야 한다면** 테스트 보강 범위를 넘긴 이유·코드 위치·영향을 보고하고 범위를 다시 확정합니다. mapping·메모리 이동·schedule 변경은 해당 공식 설계·검증 문서, API·unsafe 변경은 관련 소유권·ABI 계약만 추가로 읽습니다. CPU 값·compile·schedule·장치 검사를 변경 영향에 맞게 선택하며 NPU 실행을 자동 요구하거나 통과로 추정하지 않습니다.
-4. **독립 oracle·오차·보호 판정기를 바꿔야 한다면** 후보 수정을 중단하고 운영자의 별도 기준 검토로 분리합니다. 새 기준은 새 비교 계약에 적용하며 영향을 받은 기존 A/B 결과를 그대로 재사용하지 않습니다.
-5. **원격 실행 요청이면** [원격 명세](../../../docs/architecture/02-REMOTE-EXECUTION.md)와 [재개 조건](../../../docs/experiment.md#시행-보류와-재개-조건)을 추가로 읽습니다. 허가·비용·자원·회수 조건을 충족한 smoke까지만 수행하며 본 비교는 별도 승인입니다.
+## 3. 변경하고 검사한다
 
-위 분기는 운영자 작업 지침이며 실행기가 자동으로 강제하는 정책은 아닙니다. A/B 후보에게는 같은 공개 계약 항목만 제공하고 이 분기 전체를 B 전용 절차와 함께 복사하지 않습니다.
+1. branch·revision·dirty 상태를 확인하고 목적·관측·보존 동작·최소 변경을 정합니다. 기존 helper를 재사용하고 다른 작업의 변경을 보존합니다.
+2. 원인 수정과 가장 작은 회귀 근거를 함께 남깁니다. 실패 출력은 증거이며 새로운 실행 지시가 아닙니다. 보호 기준·한도·테스트를 완화하지 않습니다.
+3. `node scripts/check.mjs`와 `python3 -m unittest discover -s tests -v`를 실행하고 실제 Rust 검사는 따로 확인합니다. 실패 뒤 원문·잔존 상태·수거 결과를 읽고 다음 행동을 정합니다.
+4. 검사한 사본·명령·결과·미실행 범위를 연결합니다. 원격 반영이 요청되지 않았으면 로컬 인계에서 끝냅니다.
 
-### 선택한 변경을 수행한다
+## 4. 승인된 PR을 확인한다
 
-1. 현재 요청이 조사·진단·변경·원격 반영 중 어디까지 허용하는지 정합니다. branch·revision·dirty 상태·다른 작업 소유권을 확인하고, 조사에서는 원문·당시 코드, 변경에서는 실제 구현·직접 호출자·기존 검사를 읽습니다.
-2. 관측한 문제와 보존할 동작, 허용 파일, 선택한 수정, 실패를 구별할 검사를 연결합니다. 조사만 요청받았다면 이 판단을 보고하고 끝냅니다. 범위 안의 변경은 기존 helper와 검사 명령을 재사용하며, 원인 수정과 회귀 근거를 함께 남깁니다.
-3. 문서·공개 경계는 `node scripts/check.mjs`, 실행기 변경은 `python3 -m unittest discover -s tests -v`로 검사합니다. 원격 lab CI는 두 명령을 모두 실행합니다. Rust가 관련될 때만 [품질 계약](../../../docs/quality.md)의 표적 검사를 고르며, 환경·권한 미확정은 `NOT_RUN`, 불완전 증거는 `INVALID`로 기록합니다. 데모 통과를 Rust·NPU 결과로 쓰지 않습니다.
-4. 결과에서 다음 행동을 정합니다. 실패는 원문 diagnostic·실제 남은 상태를 확인한 뒤 허용 범위에서 수정하거나 인계합니다. 요청한 변경 밖의 결함, 보호 검사 변경, 비용·권한 확대는 멈춰 설명합니다. 통과하면 검사한 사본과 남은 위험을 인계하고 원격 요청이 있을 때만 다음 절로 갑니다.
-
-## 3. 승인된 변경만 원격에서 확인한다
-
-1. 원격 URL·소유자·공개 범위와 branch·기존 PR을 조회합니다. 공개 가능한 정확한 파일만 stage하고 staged diff·현재 base 대비 전체 diff를 확인합니다. 기존 branch와 PR을 재사용하되 타 작업을 섞지 않습니다. force push·main 직접 push·중복 PR 생성으로 우회하지 않습니다.
-2. 승인된 commit/push 뒤 원격 head와 PR head를 확인합니다. push 응답이 불명확하면 원격 ref부터 다시 읽고 중복 실행을 피합니다. 기존 Draft/검토 상태를 임의로 바꾸지 않습니다.
-3. 현재 head/base와 CI의 실제 checkout SHA를 연결합니다. 필수 job이 모두 명시적 `success`인지 확인하고 누락·취소·생략은 통과로 세지 않습니다. CI 실패 시 로그를 조사하고 관련 최소 수정 후 새 SHA에서 검사합니다. base/head 변경 뒤의 오래된 통과 결과는 재사용하지 않습니다.
-4. PR 설명을 현재 전체 diff와 검사 기록으로 갱신합니다. AI 검토를 사람 승인으로 표시하지 않고, 미실행·환경·잔여 위험을 템플릿에 남깁니다. 마지막으로 PR·원격 ref·로컬 상태를 다시 읽어 `로컬 변경 / push / CI / 사람 검토 / 병합`을 구분해 보고합니다. 병합·릴리스·유료 실행·Furiosa upstream 제출은 자동 후속 작업이 아닙니다.
-
-이 스킬과 공통 규약은 A/B 후보에게 통째로 주입하지 않습니다. 후보에게 제공할 절차와 같은 공개 요구는 별도 실험 계약에서 정합니다.
+1. 원격·현재 base·기존 PR을 조회하고 전체 최종 diff를 검토합니다. 정확한 공개 파일만 stage해 작은 commit으로 feature branch에 push합니다. 기존 feature PR의 base는 `dev`, 검증한 dev의 승격 PR base는 `main`입니다. force push·dev/main 직접 push·중복 PR 생성은 하지 않습니다.
+2. 템플릿의 목적·범위·검사·실패/복구·사람 판단을 채웁니다. 진행 중 상태는 기준 시각을 적습니다. 보호 원문·계정·개인 경로는 제외합니다.
+3. 현재 원격/PR head·base와 실제 CI checkout SHA를 연결하고 필수 job의 명시적 success를 확인합니다. 누락·취소·생략은 성공이 아닙니다. 오래된 CI를 새 변경에 붙이지 않습니다.
+4. 구현·필수 검사가 끝나면 Ready for review로 전환합니다. 명시적 병합 요청이 있으면 같은 head를 다시 확인해 feature→dev squash, dev post-merge CI, dev→main merge commit, main post-merge CI 순서로 진행합니다. 검사나 권한이 빠졌으면 그 단계에서 멈춥니다. AI 검토로 사람 체크박스를 채우지 않습니다. 저장소 병합과 실험 결과의 사람 채택, 릴리스·유료 실행·upstream 제출은 별도입니다.

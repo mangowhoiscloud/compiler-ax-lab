@@ -13,7 +13,7 @@
 ```bash
 mkdir -p .local/trials
 test ! -e .local/trials/candidate-demo.py && \
-  cp examples/group-reduction/candidate.py .local/trials/candidate-demo.py
+  cp examples/group-reduction/candidate.py .local/trials/candidate-demo.py && \
 python3 scripts/trial.py init --run-dir .local/trials/demo-001 \
   --candidate .local/trials/candidate-demo.py --max-attempts 2 --timeout 10
 ```
@@ -87,7 +87,7 @@ python3 scripts/trial.py status --run-dir .local/trials/demo-001
 
 초기화/실행 오류의 `stop.json`은 필요한 경우에만 생긴다. 원문 값과 로그를 hash로 대체하지 않는다. `notes.md`는 설명 기록이며 스크립트가 존재나 의미의 타당성을 검사하지 않는다. 실패와 중단 기록도 성공 기록과 함께 보존한다.
 
-`status`는 시도 예약·완료 기록과 각 result·사본·invocation·stdout/stderr를 대조하고, 원문 검사 결과로 판정을 다시 확인한다. 누락·불일치는 `STOP / INVALID`이며 자동 복구하거나 시도를 다시 열지 않는다. 현재 형식의 receipt가 없는 과거 run도 인계 가능 상태로 승격하지 않고 원본을 보존한다. 같은 권한으로 모든 파일을 함께 조작하는 공격을 막는 인증은 아니며, notes와 변경의 의미는 사람이 확인한다. [상세 구현과 남은 검사](docs/architecture/01-LOCAL-TRIAL.md)
+`status`는 시도 예약·완료 기록과 각 result·사본·invocation·stdout/stderr를 대조하고, 원문 검사 결과로 판정을 다시 확인한다. 누락·불일치는 `STOP / INVALID`이며 자동 복구하거나 시도를 다시 열지 않는다. 현재 형식의 receipt가 없는 과거 run도 인계 가능 상태로 승격하지 않고 원본을 보존한다. 같은 권한으로 모든 파일을 함께 조작하는 공격을 막는 인증은 아니며, notes와 변경의 의미는 사람이 확인한다. [실제 구현](scripts/trial.py)과 [회귀 검사](tests/test_trial.py)에서 확인한다.
 
 최종 보고는 **문제 → 진단 → 변경 → 검사 결과 → 남은 판단** 순서로 쓴다. 검사한 사본, 실패/통과한 실제 검사 수, 종료 상태를 연결한다. PR이 요청되면 [병합 절차](docs/merge.md)의 revision·사람 검토 조건을 따른다.
 
@@ -95,4 +95,4 @@ python3 scripts/trial.py status --run-dir .local/trials/demo-001
 
 이 공개 예제를 에이전트 작업 절차 비교의 독립 최종 검사나 이미 해결한 upstream 결함으로 사용하지 않는다. A/B 비교의 후보는 별도 clean checkout에서 동일한 공개 요구·기존 프로젝트 지침을 받는다. 운영자용 이 파일 전체를 양쪽 후보에게 넣지 않는다. B 절차만 분리해 제공한다.
 
-실제 compiler 과제는 [실험 계획](docs/experiment.md)과 [품질 계약](docs/quality.md)에 따라 x86 toolchain, 허용 Rust 파일, 실행된 테스트 목록·독립 기대값, 필요한 target 검사를 먼저 연결한다. 그 adapter와 별도 실행 승인이 없는 동안 이 실행기는 데모에서 멈춘다.
+실제 compiler 과제는 [품질 계약](docs/quality.md)과 [커널 계약](docs/kernels/double-buffering.md)에 따라 x86 toolchain, 허용 Rust 파일, 실행된 테스트 목록·독립 기대값, 필요한 target 검사를 먼저 연결한다. 공개된 구현과 A/B 진행 상태는 [README](README.md#검증-상태)에서 구분한다. Rust adapter와 별도 실행 승인이 없는 동안 이 실행기는 데모에서 멈춘다.
