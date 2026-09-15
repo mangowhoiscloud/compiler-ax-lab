@@ -2,7 +2,7 @@
 
 적용 범위는 이 저장소 전체이며 더 가까운 `AGENTS.md`가 있으면 해당 작업의 세부 규칙을 함께 읽습니다. 파일명은 `AGENTS.md`로 유지하고 별도 `AGENT.md`에 중복 규약을 만들지 않습니다. 목적은 코드 생성량을 늘리는 것이 아니라 **변경의 원인·영향·검증 근거를 사람이 판단할 수 있게 만드는 것**입니다.
 
-**현재 실행 상태: AWS CPU smoke, double-buffering과 mapping parser의 정상 검사·공개 오류 대조군 검출 완료.** [parser 계약](docs/quality.md#mapping-parser)과 [커널 실행 결과](docs/kernels/double-buffering.md#8-로컬-docker-실행-결과)의 범위·소스·바이너리 일치를 함께 확인합니다. workspace check·Clippy는 통과했지만 [전체 release 빌드는 저장공간 한도로 중단](docs/kernels/double-buffering.md#9-후속-workspace-검사와-중단-기록)됐습니다. lab CI·사람 채택은 [revision별 상태](docs/merge.md#현재-구현과-제안의-경계)로 구별합니다. 추가 클라우드 자원 생성·모델 비교는 [남은 재개 조건](docs/experiment.md#시행-보류와-재개-조건)을 확인한 뒤 승인된 범위에서만 시작합니다. 계정이나 로그인 상태가 바뀌어도 비용·권한·환경 조건을 생략하지 않습니다.
+**현재 실행 상태: AWS CPU smoke, 두 공개 테스트 보강·오류 대조군 검출과 CPU workspace 통합 검사 완료.** [parser 계약](docs/quality.md#mapping-parser)과 [커널 실행 결과](docs/kernels/double-buffering.md#8-로컬-docker-실행-결과)를 확인합니다. 저장공간으로 중단된 이전 실행은 보존하고, 새 실행에서 두 변경을 함께 적용해 [release 빌드·일반 검사 720개·doctest 55개·전체 대상 Clippy](docs/kernels/double-buffering.md#10-두-테스트-변경의-cpu-workspace-통합-검사)를 통과했습니다. 기존 ignored 17개와 NPU·A/B는 통과 범위에 포함하지 않습니다. lab CI·사람 채택은 [revision별 상태](docs/merge.md#현재-구현과-제안의-경계)로 구별합니다. 추가 클라우드 자원 생성·모델 비교는 [남은 재개 조건](docs/experiment.md#시행-보류와-재개-조건)을 확인한 뒤 승인된 범위에서만 시작합니다. 계정이나 로그인 상태가 바뀌어도 비용·권한·환경 조건을 생략하지 않습니다.
 
 ## 1. 요청에 맞는 경로를 고른다
 

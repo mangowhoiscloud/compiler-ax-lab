@@ -1,6 +1,6 @@
 # Double-buffering 테스트 계약: 그룹별 출력과 경계를 구별한다
 
-상태: **2026-09-15 KST 로컬 Docker amd64에서 SDK 테스트 3개·18 case·46,080개 값 비교가 통과했고, 공개 오류 대조군 1개는 예상한 수치 assertion으로 검출했습니다. 고정 nightly의 fmt·표적 Clippy도 통과했습니다.** [실행 결과](#8-로컬-docker-실행-결과)를 준비 절차와 구분합니다. 이번 작업은 공개 단일 변경 파일럿이며 A/B 비교나 NPU 측정이 아닙니다. 추가 원격 실행은 [재개 조건](../experiment.md#시행-보류와-재개-조건)과 비용·시간 승인을 별도로 확인합니다.
+상태: **2026-09-15 KST 로컬 Docker amd64에서 SDK 테스트 3개·18 case·46,080개 값 비교가 통과했고, 공개 오류 대조군 1개는 예상한 수치 assertion으로 검출했습니다. 고정 nightly의 fmt·표적 Clippy도 통과했습니다.** [표적 실행](#8-로컬-docker-실행-결과) 이후 parser 테스트 변경을 함께 적용한 [CPU workspace release 통합 검사](#10-두-테스트-변경의-cpu-workspace-통합-검사)도 완료했습니다. 공개 테스트 보강 파일럿이며 A/B 비교나 NPU 측정이 아닙니다. 추가 원격 실행은 [재개 조건](../experiment.md#시행-보류와-재개-조건)과 비용·시간 승인을 별도로 확인합니다.
 
 ## 1. 목적과 허용 변경
 
@@ -161,3 +161,27 @@ run `compiler-followup-20260915-iGJZ5Q`는 같은 upstream pin·Cargo.lock과 �
 2026-09-14 16:35:35 UTC에 여유 공간이 6,240,176 KiB로 내려가 감시 스크립트가 이 worker만 중지했습니다. `docker exec`는 137로 끝났지만 Docker `OOMKilled=false`였으며, 이를 컴파일러 오류나 메모리 OOM으로 분류하지 않았습니다. 중단 전 원문과 부분 산출물은 보존했습니다. 전체 빌드를 다시 시작하거나 시간 상한을 늘리지 않고, 이번 worker의 재생성 가능한 SDK cache만 정리한 뒤 같은 한도 안에서 작은 [parser 검사](../quality.md#mapping-parser)를 완료했습니다.
 
 parser의 정상·오류 바이너리와 소스·원문을 대조한 뒤 후속 worker를 중지·삭제했습니다. Kubernetes 노드 세 개는 사용자 확인에 따라 중지하고 restart policy를 `no`로 변경했습니다. 다른 작업의 이미지·volume·소스·채팅과 이전 실행 증거는 삭제하지 않았습니다. lab 원격 PR CI는 [별도 기록](../merge.md#현재-구현과-제안의-경계)이며, Rust 전체 검사·NPU 실행·병합·릴리스 완료를 대신하지 않습니다.
+
+## 10. 두 테스트 변경의 CPU workspace 통합 검사
+
+이전 중단 기록은 그대로 보존하고, 저장공간 확보 후 승인된 새 run `workspace-integration-20260915-uABbuISn`을 실행했습니다. lab `4647f9c76319c47f31441f03315d275d3b33b2f0`의 double-buffering 두 파일과 parser 테스트 patch를 같은 upstream pin에 함께 적용했습니다. 제품 코드·Cargo.lock·기대값은 바꾸지 않았고 오류 대조군도 넣지 않았습니다. 이번 질문은 **각각 통과한 테스트 보강이 기존 CPU workspace 검사와 함께 동작하는가**였습니다.
+
+Ubuntu 24.04 amd64/Rosetta·nightly-2026-05-01·2 CPU·6 GiB에서 새 release target을 사용했습니다. Cargo jobs=1, Rayon=2, libtest threads=1로 고정하고 의존성 준비 후 네트워크를 끊었습니다. 2시간 lifetime과 host 여유 공간 6 GiB 하한을 두되 각 검사의 timeout을 남은 시간으로 제한했습니다. 이미지 digest는 같지만 Ubuntu 패키지 판본은 이전 실행과 달라 아래 시간을 성능 개선으로 비교하지 않습니다.
+
+| 실제 명령·검사 | 결과와 범위 |
+|---|---|
+| 기록기 회귀·`cargo fmt --all -- --check` | PASS; command/capture exit 0 |
+| `cargo test --offline --locked --workspace --release --no-run` | PASS; 19분 10.16초; 일반 test 바이너리 61개 생성 |
+| 같은 test 명령의 `-- --list` | 목록과 실제 실행 이름·수를 타겟별로 대조 |
+| 같은 test 명령의 `-- --test-threads=1` | PASS; 2분 12.85초; 일반 검사 720 passed·5 ignored, doctest 55 passed·12 ignored |
+| `cargo clippy --offline --locked --workspace --all-targets --release -- -D warnings` | PASS; 3분 34.73초; command/capture exit 0 |
+
+일반 대상은 unit/bin 15개와 integration 46개입니다. parser 12개와 double-buffering 5개는 모두 통과했고 ignored·filtered가 없습니다. 사전 소스 목록은 examples·mapping의 integration 44개만 세었으나, Cargo 목록에는 lower의 `config_slice`·`config_tile`도 포함됐습니다. 두 대상의 32개·14개 검사까지 실제 실행으로 확인해 목록 누락을 정정했습니다. `private_pool_contract`가 실행한 자식 검사 1개는 중복 집계에서 뺐습니다. 이 검사는 자체적으로 Rayon=3을 지정하지만 컨테이너 CPU 한도는 유지됩니다.
+
+doctest는 12개 crate의 14개 실행 그룹이며, 통과한 55개 중 44개는 `compile_fail`입니다. 기대한 컴파일 거절도 rustdoc의 결과로 판정했습니다. 기존 일반 ignored 5개와 doctest ignored 12개를 통과 수에 넣지 않았습니다. NPU 전용 `cancel_tests`·`pe_sharing_tests`·`test_profile`은 CPU 모드에서 0개이며, helper·빈 파일 역시 수치 검사 통과로 세지 않았습니다.
+
+모든 단계의 command/capture와 검증 스크립트 종료 코드는 0입니다. 실행 전후 세 소스 파일·lock·patch를 대조하고, 빌드한 일반 바이너리 61개와 실행 경로가 일치하는지 확인했습니다. 61개의 hash를 기록했으며 실제 보존한 바이너리는 변경 대상 2개입니다. double-buffering은 `3c72e405f55ad76603dd80bac16e6dc4349a9fcea726a54ea9cb84b353d1605a`, parser는 `40058a5482b776bcea2822727efdb4a791b94c65dd88078c0a7f55a90876adda`로 수거본과 일치합니다. 이번에는 기본 libtest capture를 사용했으므로 성공 배열 원문이 아니라 assertion 통과를 확인한 것입니다. §8의 원시 값 46,080개를 이번 실행에서 다시 수집했다고 합산하지 않습니다.
+
+메모리 peak는 한도인 6 GiB에 도달했고 `memory.events`의 max는 1,145회였지만 oom·oom_kill은 0이었습니다. 메모리 압력이 없었다고 해석하지 않습니다. 소스·원문 stdout/stderr·PTY·선택 바이너리·수거 기록을 보존·대조한 뒤 이번 worker와 그 안의 재생성 가능한 빌드 cache를 삭제했습니다. 대기용 컨테이너 PID 1은 `docker stop`으로 137 종료됐고 `OOMKilled=false`였습니다. 이는 이미 0으로 끝난 검증 스크립트와 별도입니다. 회수 기록을 포함한 최종 manifest는 114개·20,500,718바이트를 재대조했습니다. Kubernetes 세 노드는 중지·restart=no를 유지했고 다른 세션의 자료·이미지·volume은 보존했습니다.
+
+따라서 **고정 후보의 기본 feature CPU workspace 회귀 검사와 release Clippy까지 완료**했습니다. ignored 검사·비기본 feature 조합·mdbook·dependency audit·NPU 번역/실행·모델 A/B는 별도입니다. 검사 통과는 [사람 채택 검토](../merge.md)의 입력이며 자동 병합·릴리스 승인으로 바뀌지 않습니다.

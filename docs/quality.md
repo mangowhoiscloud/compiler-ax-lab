@@ -1,6 +1,6 @@
 # 품질 계약: 통과한 검사가 무엇을 보장하는가
 
-**[추론: 파일럿 적용 기준]** 이 문서는 과제에 공통으로 적용할 코드 관례·검사·채택 기준을 정한다. 기존 명령을 재사용하되 실행 누락과 잘못된 판정 때문에 정상처럼 보이는 변경을 구별한다. 첫 과제의 동작·허용 변경·소스·실행 분기는 [double-buffering 테스트 계약](kernels/double-buffering.md)에 둔다. 근거는 [Furiosa·Dioxus·Rust 원문 대장](sources.md)에 있다. AWS CPU smoke, 두 공개 사례의 표적 검사와 workspace check·Clippy는 완료했다. 전체 release 빌드는 저장공간 한도로 중단됐고 전체 Rust 테스트·A/B·NPU 검사는 미실행이다. [후속 실행 기록](kernels/double-buffering.md#9-후속-workspace-검사와-중단-기록)과 [lab CI](merge.md#현재-구현과-제안의-경계)를 별도로 확인한다.
+**[추론: 파일럿 적용 기준]** 이 문서는 과제에 공통으로 적용할 코드 관례·검사·채택 기준을 정한다. 기존 명령을 재사용하되 실행 누락과 잘못된 판정 때문에 정상처럼 보이는 변경을 구별한다. 첫 과제의 동작·허용 변경·소스·실행 분기는 [double-buffering 테스트 계약](kernels/double-buffering.md)에 둔다. 근거는 [Furiosa·Dioxus·Rust 원문 대장](sources.md)에 있다. AWS CPU smoke와 두 공개 사례의 표적 검사를 완료했다. 이전 저장공간 중단 이후 새 실행에서 두 변경을 함께 적용해 release 빌드·CPU 일반 검사 720개·doctest 55개·전체 대상 Clippy도 통과했다. 기존 ignored 17개, A/B·NPU·사람 채택은 이 결과에 포함하지 않는다. [통합 실행 기록](kernels/double-buffering.md#10-두-테스트-변경의-cpu-workspace-통합-검사)과 [lab CI](merge.md#현재-구현과-제안의-경계)를 별도로 확인한다.
 
 ### 입력과 수치 계약
 
@@ -92,6 +92,8 @@ cargo test -p furiosa-opt-examples --release --test binary_add_tests -- --exact 
 4. **주장 범위:** 토큰화 가능한 공개 DSL 입력의 AST와 `syn::Error` 문구·위치를 검사합니다. Rust 타입 검사·macro 확장 전체·mapping 실행·NPU lowering을 증명하지 않습니다. 모델 A/B, 미지 결함 검출률과 사람 채택은 별도입니다. 보호 평가 계약을 추가하기 전에는 이 공개 입력을 A/B의 최종 평가로 재사용하지 않습니다.
 
 #### 실행 결과와 재현
+
+표적 실행 이후 두 테스트 변경을 함께 적용한 [CPU workspace 통합 검사](kernels/double-buffering.md#10-두-테스트-변경의-cpu-workspace-통합-검사)에서도 parser 12개가 통과했습니다. 아래 baseline·공개 오류 대조군 결과는 각각의 기존 실행에 속하며, 통합 실행에서 다시 오류를 주입한 것은 아닙니다.
 
 run `compiler-followup-20260915-iGJZ5Q`에서 앞선 double-buffering과 같은 Ubuntu 24.04 amd64/Rosetta·nightly-2026-05-01을 사용했습니다. 한도는 2 CPU·6 GiB, Cargo jobs=1·test threads=1이며 의존성 준비 후 네트워크를 끊었습니다. 무변경 baseline은 6 passed, [테스트 patch](../examples/furiosa-mapping-parser/tests.patch)를 적용한 후보는 **12 passed·0 failed·0 ignored**였습니다. 네 Extent 형태의 AST 8회와 정상 bracket atom 2회는 두 진입점에서 확인했습니다. 기존 diagnostic 6개와 추가 오류 사례도 같은 테스트 안에서 실행됐습니다.
 

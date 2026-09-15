@@ -6,7 +6,7 @@
 
 **후속 double-buffering 정상 CPU 검사와 공개 오류 대조군 검출을 완료했습니다.** 로컬 Docker amd64/Rosetta에서 세 구현·6종 입력의 46,080개 값과 helper 검사 2개가 통과했습니다. 한 줄의 오류를 넣은 별도 checkout은 컴파일 후 예상한 수치 assertion에서 실패했습니다. fmt·표적 Clippy도 통과했습니다. [코드·수치 근거·실행 결과](docs/kernels/double-buffering.md#8-로컬-docker-실행-결과)에 범위와 남은 검사를 구분했습니다. 추가 원격·모델 비교 실험은 [남은 재개 조건](docs/experiment.md#시행-보류와-재개-조건)을 확인한 뒤 승인된 범위에서 진행합니다.
 
-**mapping parser는 문법 → AST → 오류 문구·위치를 묶은 12개 검사와 공개 오류 대조군 검출을 완료했습니다.** 두 진입점의 정상 동작을 확인하고, 허용되지 않은 문법을 추가한 사본에서는 의도한 assertion이 실패했습니다. [계약·patch·재현 명령](docs/quality.md#mapping-parser)을 제공합니다. 후속 [workspace check·Clippy는 통과했지만 release 빌드는 저장공간 한도로 중단](docs/kernels/double-buffering.md#9-후속-workspace-검사와-중단-기록)됐습니다. lab 문서·실행기 CI와 Rust 전체 테스트는 [별도 상태](docs/merge.md#현재-구현과-제안의-경계)로 관리합니다.
+**mapping parser는 문법 → AST → 오류 문구·위치를 묶은 12개 검사와 공개 오류 대조군 검출을 완료했습니다.** 두 진입점의 정상 동작을 확인하고, 허용되지 않은 문법을 추가한 사본에서는 의도한 assertion이 실패했습니다. [계약·patch·재현 명령](docs/quality.md#mapping-parser)을 제공합니다. 저장공간 한도로 중단된 이전 기록을 보존한 뒤, 새 실행에서 두 테스트 변경을 함께 적용했습니다. **[CPU workspace의 release 빌드·일반 검사 720개·doctest 55개·전체 대상 Clippy가 통과](docs/kernels/double-buffering.md#10-두-테스트-변경의-cpu-workspace-통합-검사)했습니다.** 기존 ignored 검사는 일반 5개·doctest 12개이며 NPU 실행은 포함하지 않습니다. lab 문서·실행기 CI와 사람 채택은 [별도 상태](docs/merge.md#현재-구현과-제안의-경계)로 관리합니다.
 
 ## 먼저 읽을 것
 

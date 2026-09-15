@@ -2,9 +2,9 @@
 
 ## 현재 구현과 제안의 경계
 
-이 lab에는 [PR 템플릿](../.github/pull_request_template.md), [CI](../.github/workflows/quality.yml), [CODEOWNERS](../.github/CODEOWNERS)가 있습니다. CI는 문서·공개 파일·산술과 로컬 변경 루프 실행기의 회귀 검사를 수행합니다. AWS 무변경 Rust CPU smoke, 로컬 Docker의 [double-buffering 검사](kernels/double-buffering.md#8-로컬-docker-실행-결과), [mapping parser 검사](quality.md#mapping-parser)는 별도로 완료했습니다. workspace check·Clippy는 통과했고 전체 release 빌드는 저장공간 한도로 중단됐습니다. 전체 Rust 테스트·NPU 검사·사람 채택은 미완료입니다.
+이 lab에는 [PR 템플릿](../.github/pull_request_template.md), [CI](../.github/workflows/quality.yml), [CODEOWNERS](../.github/CODEOWNERS)가 있습니다. CI는 문서·공개 파일·산술과 로컬 변경 루프 실행기의 회귀 검사를 수행합니다. AWS 무변경 Rust CPU smoke, 로컬 Docker의 [double-buffering 검사](kernels/double-buffering.md#8-로컬-docker-실행-결과), [mapping parser 검사](quality.md#mapping-parser)는 별도로 완료했습니다. 이전 저장공간 중단 이후 새 worker에서 두 변경을 함께 적용한 [CPU workspace release 빌드·일반 검사 720개·doctest 55개·Clippy](kernels/double-buffering.md#10-두-테스트-변경의-cpu-workspace-통합-검사)도 통과했습니다. 기존 ignored 17개, NPU·비기본 feature 조합·mdbook·dependency audit·모델 A/B와 사람 채택은 남아 있습니다.
 
-Draft PR #1의 head `5753e4c38c91bc0ecbe73e1dee1904a619dc28b9`에서는 [lab-docs·lab-ci가 모두 SUCCESS](https://github.com/mangowhoiscloud/compiler-ax-lab/actions/runs/34868276127)였습니다. 실제 checkout은 test merge `8f42d9ca37bccee08ebddee9d267060d4da869a3`이며 Python 회귀 16개가 통과했습니다. 이것은 해당 revision의 기록입니다. parser 후속 변경을 포함한 현재 head의 상태는 [PR #1](https://github.com/mangowhoiscloud/compiler-ax-lab/pull/1)에서 다시 확인해야 하며 이 기록을 새 head의 통과로 재사용하지 않습니다.
+Draft PR #1의 head `4647f9c76319c47f31441f03315d275d3b33b2f0`에서는 [lab-docs·lab-ci가 모두 SUCCESS](https://github.com/mangowhoiscloud/compiler-ax-lab/actions/runs/34871429777)였습니다. 실제 checkout은 test merge `20b4e1ebb4d42bb61dd3aaae1aebf102ef256eb2`이며 Python 회귀 16개가 통과했습니다. 이것은 해당 revision의 기록입니다. 통합 실행 결과를 반영한 새 head의 상태는 [PR #1](https://github.com/mangowhoiscloud/compiler-ax-lab/pull/1)에서 다시 확인하며 이 기록을 새 head의 통과로 재사용하지 않습니다. Rust 실행은 이 lab CI가 아니라 별도 worker의 근거입니다.
 
 이 개인 연구의 이전 설계에는 head/base/통합 revision → 재검사 → 사람 병합 → post-merge CI → 별도 릴리스라는 도식이 있었지만 실제 PR 템플릿·원격 저장소·workflow는 없었습니다. 이번에는 같은 절차를 lab 운영에 연결합니다. Furiosa upstream에 PR을 올리는 일은 별도 승인입니다.
 
