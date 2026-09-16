@@ -2,6 +2,38 @@
 
 이 문서는 이 lab의 코드 관례·검사·채택 기준입니다. 공급사의 내부 정책을 뜻하지 않습니다. 실행 결과 집계는 [README의 검증 상태](../README.md#검증-상태), 작업 권한은 [AGENTS](../AGENTS.md), PR 인계는 [병합 규약](merge.md)을 따릅니다. 문서 정리는 이미 동결한 개별 실행 계약을 변경하지 않습니다.
 
+### 언어별 정적 검사와 CI 분기
+
+실행 코드는 표준 라이브러리를 유지하고 검사 도구만 개발 의존성으로 고정합니다. 검사 중 자동 수정하지 않으며, 포맷 변경도 diff로 검토합니다.
+
+| 대상 | 고정 도구·실행 | 검출 범위와 제외 범위 |
+|---|---|---|
+| Python 4개 파일 | [pyproject.toml](../pyproject.toml), [requirements-dev.txt](../requirements-dev.txt): Ruff lint/format, mypy; Python 3.9·3.12에서 unittest | 미정의 이름·import·포맷·함수 타입 및 16개 동작 회귀. JSON 경계의 `Any`는 기존 런타임 검증이 담당하며 완전한 schema 타입 증명은 아님 |
+| JavaScript·검사 설정 | [Biome](../biome.json), [package lock](../package-lock.json): `npm ci --ignore-scripts`, `npm run check` | 권장 lint·포맷·import 정리. TypeScript 타입 검사나 의미 보존 증명은 아님 |
+| Rust 파일·patch | nightly-2026-05-01 rustfmt, 독립 reference의 `clippy-driver --test -D warnings`와 2개 테스트; 고정 upstream에서 `git apply --check` | SDK 테스트 파일의 구문/포맷, 독립 reference의 타입·Clippy·동작, patch 적용 가능성. SDK 통합 타입·링크·parser 실행·NPU 검사는 별도 |
+| Markdown·공개 경계 | `node scripts/check.mjs` | allowlist·로컬 링크/anchor·민감정보 패턴·스킬 진입 경로·필수 CI 규약. 외부 URL의 가용성이나 문장의 사실 여부는 별도 검토 |
+| GitHub Actions YAML·shell | actionlint v1.7.12; runner의 ShellCheck가 있으면 함께 사용 | YAML·식·job 의존성과 shell 진단. 실제 클라우드 실행 결과를 대신하지 않음 |
+
+Python 검사는 별도 환경에서 다음 명령으로 재현합니다. Python 3.9는 기존 호환성 하한의 회귀 검사이며 새 운영 환경의 권고 버전이 아닙니다.
+
+```bash
+python3 -m venv .local/static-env
+.local/static-env/bin/python -m pip install -r requirements-dev.txt
+.local/static-env/bin/python -m ruff check scripts tests examples/group-reduction
+.local/static-env/bin/python -m ruff format --check scripts tests examples/group-reduction
+.local/static-env/bin/python -m mypy
+.local/static-env/bin/python -m unittest discover -s tests -v
+npm ci --ignore-scripts
+npm run check
+node scripts/check.mjs
+```
+
+실제 분기는 [quality.yml](../.github/workflows/quality.yml)이 실행하고 [check.mjs](../scripts/check.mjs)가 선택·집계합니다. `lab-system`은 항상 실행합니다. `.py`는 Python, `.mjs`·npm/Biome 설정은 JavaScript, `.rs`·`.patch`는 Rust 검사를 선택합니다. 공통 지침·품질/CI 설정·알 수 없는 경로는 모두 선택합니다. README·병합 설명·PR 템플릿만 바뀌면 언어 job은 선택하지 않습니다. 삭제·이름 변경은 이전/새 경로를 모두 비교하고, 비교 base를 읽지 못하면 전체 검사를 실행합니다.
+
+필수 check 이름은 기존 `lab-ci`를 유지합니다. 선택된 모든 job은 `success`여야 하며, 계획에서 선택하지 않은 언어 job의 `skipped`만 허용합니다. 필수 job의 실패·취소·예상하지 않은 생략·누락된 계획은 거절합니다. 선택/집계의 정상·거절 사례는 `node scripts/check.mjs --self-test`로 재현합니다. 검사 파일 변경도 전체 job을 실행하며 `continue-on-error`로 실패를 숨기지 않습니다.
+
+새 도구나 규칙은 담당 언어의 코드·설정·CI·이 표를 함께 갱신합니다. CI는 instruction 준수나 모델의 문제 해결 성능을 측정하지 않습니다. SDK 전체 검사는 아래 별도 명령과 환경 계약을 따릅니다.
+
 ### 입력과 수치 계약
 
 검사 전에 shape·dtype·계산식·입력 범위·오차·독립 oracle을 고정합니다. [Double-buffering 계약](kernels/double-buffering.md)은 유한 정수 입력의 수치 의무를, [아래 parser 계약](#mapping-parser)은 AST와 오류 위치를 정합니다. 미정값·누락 증거를 성공으로 채우거나 CPU 결과를 NPU 근거로 사용하지 않습니다.
@@ -48,6 +80,10 @@ A/B에는 같은 공개 요구·도구·수용 기준을 고정하고 추가 작
 [Dioxus의 실패 입력·원문 오류](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/packages/fuzz/src/case.rs#L119)와 [예상/실제 진단](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/packages/fuzz/src/harness.rs#L224)처럼 재현할 증거를 남깁니다. coverage 수나 비교 결과를 버리는 재생을 정확성 통과로 읽지 않고, 검사 중 expected·corpus를 덮어쓰지 않습니다. fuzzing·Miri·sanitizer는 관련 위험과 실행 가능성이 있을 때만 추가합니다.
 
 ### 실제 명령과 실행 증거
+
+기록을 인계할 때 run/attempt·후보/부모 후보·실제 command와 결과를 연결합니다. 관측 순서와 tool call/result의 짝은 원본에 있는 식별자로 보존하고, 없는 시각·순서·ID는 추정해 채우지 않습니다. 현재 Python 데모의 attempt 기록은 검사 receipt이며 전체 에이전트 대화 trajectory가 아닙니다. 별도 agent transcript가 있다면 제한된 locator로 연결합니다.
+
+원본은 생산 시스템의 기록이고 정규화본·요약은 파생본입니다. 원문 발생 시각·수집 시각·공개 시각, 범위 완전성과 재생 가능성을 각각 구분합니다. 잘린 출력·누락 pair·확인하지 못한 구간은 명시합니다. 외부 공개용 마스킹은 원본과 별도 digest로 기록하고 비공개 프롬프트·인증정보·숨겨진 reasoning은 공개하지 않습니다. 수거 목록과 hash만 남은 receipt를 원본의 복구 가능한 백업으로 보지 않습니다.
 
 호환 x86-64 Linux에서 [고정 upstream README](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/README.md)의 의존성을 먼저 준비합니다. source pin은 `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`입니다. jobs·테스트/내부 스레드·전용 `CARGO_TARGET_DIR`·cache 시작 상태·시간/출력/자원 상한을 고정합니다. `--list`도 빌드를 유발합니다.
 

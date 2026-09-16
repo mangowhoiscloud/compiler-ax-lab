@@ -1,0 +1,15 @@
+{
+  "name": "compiler-ax-lab-checks",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "biome ci scripts/*.mjs package.json biome.json",
+    "format": "biome format --write scripts/*.mjs package.json biome.json"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14"
+  }
+}

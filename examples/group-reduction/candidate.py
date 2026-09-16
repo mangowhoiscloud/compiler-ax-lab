@@ -1,9 +1,10 @@
 """Seeded demonstration bug: group sums incorrectly retain the previous sum."""
+
 import json
 import sys
 
 
-def reduce_groups(groups):
+def reduce_groups(groups: list[list[int]]) -> list[int]:
     total = 0
     result = []
     for group in groups:

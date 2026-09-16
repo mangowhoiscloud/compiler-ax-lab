@@ -1,0 +1,17 @@
+[tool.ruff]
+required-version = "==0.12.12"
+target-version = "py39"
+line-length = 120
+extend-exclude = [".local"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.mypy]
+python_version = "3.9"
+files = ["scripts/trial.py", "examples/group-reduction", "tests/test_trial.py"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true

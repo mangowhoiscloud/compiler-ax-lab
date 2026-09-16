@@ -37,11 +37,13 @@ python3 -m unittest discover -s tests -v
 
 첫 명령은 공개 파일·민감정보·읽기 경로·PR/CI 규약을 검사합니다. 두 번째는 실행기의 정상·실패·중단 및 저장 증거 검증을 확인합니다. 둘 다 Rust나 NPU 검사는 아닙니다.
 
+변경을 제출할 때는 [언어별 품질 검사](docs/quality.md#언어별-정적-검사와-ci-분기)도 실행합니다. CI는 항상 공개/문서·workflow를 확인하고, 변경 경로에 따라 Python의 Ruff·mypy·회귀, JavaScript의 Biome, Rust의 포맷·독립 reference Clippy/테스트·patch 검사를 나눕니다. `lab-ci`는 선택된 job의 실패·취소·누락을 거절합니다. 검사 도구만 개발 의존성으로 추가되며 데모 실행에는 필요하지 않습니다.
+
 실제 수정 데모는 [program.md](program.md)의 순서로 진행합니다. seed에는 의도적인 결함이 있으므로 사본만 수정합니다. 기본 예산은 baseline을 포함한 검사 2회, 호출당 10초입니다. `REVISE`에서만 수정하며 `READY_FOR_REVIEW`는 사람에게 넘길 상태이지 자동 승인이 아닙니다. 누락·시간 초과·한도 종료는 `STOP`으로 남습니다.
 
 ## Rust 사례를 재현하려면
 
-기준은 `furiosa-opt` v0.8.1, commit `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`, `nightly-2026-05-01`입니다. SDK에 맞는 x86-64 Linux와 native dependency를 준비한 뒤, [품질 계약](docs/quality.md)에 따라 lock·도구·명령과 한도를 기록합니다. 이 저장소의 CI가 SDK 환경까지 설치하지는 않습니다.
+기준은 `furiosa-opt` v0.8.1, commit `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`, `nightly-2026-05-01`입니다. SDK에 맞는 x86-64 Linux와 native dependency를 준비한 뒤, [품질 계약](docs/quality.md)에 따라 lock·도구·명령과 한도를 기록합니다. CI의 Rust job은 SDK native 환경을 설치하지 않고 독립 reference와 patch 적용 가능성까지만 검사합니다.
 
 - **Double-buffering:** [SDK 테스트](examples/furiosa-double-buffering/tests/double_buffering_tests.rs)와 [독립 scalar reference](examples/furiosa-double-buffering/tests/support/double_buffering_reference.rs)를 고정 checkout에 적용합니다. [입력·수치 계약과 명령](docs/kernels/double-buffering.md)에 따라 세 구현의 모든 출력 좌표를 대조합니다.
 - **Mapping parser:** [테스트 patch](examples/furiosa-mapping-parser/tests.patch)를 적용해 두 parser 진입점의 AST·오류 문구·byte range를 함께 확인합니다. [적용 범위와 명령](docs/quality.md#mapping-parser)을 따릅니다.
@@ -77,7 +79,7 @@ python3 -m unittest discover -s tests -v
 
 ## 변경과 공개
 
-Git 경로는 **feature branch → `dev` → `main`**입니다. 현재 `codex/executable-loop-skill`이 feature branch 역할을 합니다. feature 변경은 `dev` PR에서 squash하고, 검증한 `dev`는 별도 PR의 merge commit으로 `main`에 올려 다음 승격에서도 공통 조상을 보존합니다. 두 단계 모두 현재 head/base의 필수 CI와 명시적 병합 요청을 확인합니다. [병합 규약](docs/merge.md), [PR 템플릿](.github/pull_request_template.md)
+Git 경로는 feature branch → `dev` → `main`입니다. 현재 `codex/executable-loop-skill`이 feature branch 역할을 합니다. feature 변경은 `dev` PR에서 squash하고, 검증한 `dev`는 별도 PR의 merge commit으로 `main`에 올려 다음 승격에서도 공통 조상을 보존합니다. 두 단계 모두 현재 head/base의 필수 CI와 명시적 병합 요청을 확인합니다. [병합 규약](docs/merge.md), [PR 템플릿](.github/pull_request_template.md)
 
 Draft는 구현·필수 검사가 남았을 때만 사용합니다. 검토 가능한 변경은 Ready for review로 전환하며, Draft 자체를 검토나 병합 승인 대신 사용하지 않습니다. 브랜치 직접 push로 병합을 우회하거나 history rewrite를 하지 않습니다. 실행 결과에 대한 사람 채택과 저장소 변경 병합은 구분합니다.
 
@@ -89,5 +91,9 @@ Draft는 구현·필수 검사가 남았을 때만 사용합니다. 검토 가�
 - [Dioxus Agent Guide](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/AGENTS.md): 작업에 필요한 구조만 읽고 실제 구현으로 이동하는 진입 방식.
 - [Furiosa torch-fx-rs 지침](https://github.com/furiosa-ai/torch-fx-rs/blob/3024d6d157732e51b02ef67b808131bec4d652ef/AGENTS.md), [Agent Skills](https://github.com/furiosa-ai/agent_skills/blob/d5fc482fdca0af78aada5d1e183b4aad18ffbfc7/AGENTS.md): 기존 API 의미·작은 변경·표적 검사와 최종 diff 기반 PR 설명.
 - [Furiosa Kernel Validation](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/docs/src/quick-start/kernel-validation.md): CPU 값 검사와 타깃 검증의 구분.
+- [Furiosa CI](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/.github/workflows/build.yml), [Dioxus CI](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/.github/workflows/main.yml): 언어 도구·표적 검사·문서 검사를 실제 job에 연결하는 구조. 이 lab의 규모와 공개 코드에 필요한 검사만 적용합니다.
+- [GEODE 운영 원칙](https://github.com/mangowhoiscloud/geode/blob/c221191bd9f90fd4a1df116f45371ec08797c2dd/GEODE.md): 허용 범위 안의 지속성, 확인한 근거에 따른 판단, 실패를 보존한 제한적 복구. GEODE runtime 기능이나 권한 tier를 이 lab에 구현된 것으로 옮기지 않습니다.
+- [Trajectory publication contract](https://github.com/mangowhoiscloud/geode-eval-artifacts/blob/d277607f3a179f191ad24b1497c0934beb9d2470/TRAJECTORIES.md): 원본·파생 요약·점수 receipt의 구분, 순서·짝·출처·불완전성 보존. 기존 run 기록을 사용하며 새 schema나 저장 엔진을 추가하지 않습니다.
+- [OpenAI Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering), [Claude Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices): 목적·제약·예시·참고 문맥을 분리하고 완료 조건을 명시하는 방식. 2026-09-16 본문을 확인했으며 모델별 권고를 보편 규칙으로 적용하지 않습니다. 지침 효과는 별도 평가 대상입니다.
 
 외부 지침의 프로젝트별 명령·강제 조건을 그대로 복사하지 않습니다. 이 lab의 작업 규칙은 [AGENTS.md](AGENTS.md), 실행 순서는 [program.md](program.md), 판정 의무는 [품질 계약](docs/quality.md)에 있습니다.

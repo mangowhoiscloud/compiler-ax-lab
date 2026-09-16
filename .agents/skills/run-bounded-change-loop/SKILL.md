@@ -16,6 +16,6 @@ description: Run or review Compiler AX Lab's bounded local Python change trial w
 
 ## 검사와 적용 범위
 
-실행기 변경은 `python3 -m unittest discover -s tests -v`, 공개 파일·문서 변경은 `node scripts/check.mjs`로 검사합니다. 의미·종료·증거 처리의 회귀는 [tests/test_trial.py](../../../tests/test_trial.py)에 있습니다. 이 검사는 Rust·NPU 정확성 검사가 아닙니다.
+실행기 변경은 [언어별 정적 검사](../../../docs/quality.md#언어별-정적-검사와-ci-분기)의 Ruff·mypy·unittest, 공개 파일·문서 변경은 `node scripts/check.mjs`로 검사합니다. 의미·종료·증거 처리의 회귀는 [tests/test_trial.py](../../../tests/test_trial.py)에 있습니다. 이 검사는 Rust·NPU 정확성 검사가 아닙니다. 기존 run은 실행기 hash를 고정하므로 도구 보강 뒤 새 실행기를 과거 기록에 소급 적용하지 않습니다.
 
 실제 Rust 작업은 [품질 계약](../../../docs/quality.md)과 [review-to-verified-pr](../review-to-verified-pr/SKILL.md)의 작업 분기를 따릅니다. 기존 A/B의 동결 계약·운영자 실행기와 Python 데모를 혼합하지 않습니다. 이 운영자 문서를 후보 세션에 통째로 전달하지 않습니다.
