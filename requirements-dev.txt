@@ -1,0 +1,7 @@
+# Static-check tools only; the runner and regression tests remain stdlib-only.
+mypy==1.17.1
+mypy_extensions==1.1.0
+pathspec==0.12.1
+ruff==0.12.12
+tomli==2.2.1; python_version < "3.11"
+typing_extensions==4.14.1

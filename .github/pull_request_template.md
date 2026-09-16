@@ -1,39 +1,50 @@
-## 문제와 변경
+## Problem and change
 
-- 목적 / issue / 재현 조건:
-- 관측에서 선택한 수정과 버린 대안:
-- 보존할 동작 / 의도적으로 바뀌는 동작:
-- 허용 범위 / 제외 범위:
+- Purpose / issue / reproduction conditions:
+- Fix selected from observations and rejected alternatives:
+- Behavior to preserve / intentionally changed behavior:
+- Allowed scope / excluded scope:
+- Selected workflow / applicable contracts (for kernel work, distinguish test strengthening, implementation changes, and evaluation-criteria changes):
+- Review requirement → change → verification evidence (original permalink where applicable):
 
 ## Revision
 
 - Baseline SHA:
+- Merge path (feature → dev / dev → main):
 - PR head SHA:
 - PR base SHA:
-- 실제 검사 checkout SHA (head와 test merge를 구분):
+- Actual verification checkout SHA (distinguish head from test merge):
+- For work-in-progress publication: as-of time / complete, running, and not run / next update condition:
 
-## 검증
+## Verification
 
-| 명령 / 검사 | 결과 (PASS / FAIL / INVALID / NOT_RUN) | 실행 수·범위 | Run / artifact / revision |
+| Command / check | Result (PASS / FAIL / INVALID / NOT_RUN) | Execution count and scope | Run / artifact / revision |
 |---|---|---|---|
 | `node scripts/check.mjs` | | | |
-| 변경에 필요한 추가 검사 | | | |
+| Additional checks required by the change | | | |
 
-- 미실행·예외·남은 위험과 결정자:
-- 실패한 검사가 실제 결함을 구별하는 근거:
-- 보호 검사 결과는 공개 가능한 요약·제한된 locator만 기록합니다. 원문·정답·개별 로그를 붙이지 않습니다.
+- Changed languages / CI selection plan / intentionally excluded jobs and reasons:
+- Static-check tools and versions / executed test count / skipped and ignored counts:
 
-## 사람 검토
+- Unexecuted checks, exceptions, residual risks, and decision owner:
+- Environment evidence (actual tool paths, versions, working directory, and preparation failures):
+- State after failure / recovery result / evidence location / retry decision owner (explain if not applicable):
+- Evidence that a failing check distinguishes the intended defect:
+- Record protected-check results only as publishable summaries and restricted locators. Do not attach raw records, answers, or individual logs.
+- Public environment/path records use repository-relative paths or de-identified locators, without personal absolute paths or credentials.
 
-- AI 보조 범위 / 사람이 직접 확인한 코드·근거:
-- [ ] 구조·API·테스트 의미·관련 문서를 확인했습니다.
-- [ ] 기준 완화·검사 삭제·결과 무시로 통과시키지 않았습니다.
-- [ ] 새 파일을 포함한 diff에 개인 정보·키·로컬 자료가 없습니다.
-- [ ] 현재 head/base의 필수 검사가 실제 success이며 누락·생략·취소가 없습니다.
-- 검토자 / 판단 / 잔여 조건:
+## Human review
 
-## 병합 이후
+- AI-assisted scope / code and evidence personally checked by a human:
+- [ ] Structure, API semantics, test meaning, and relevant documentation have been reviewed.
+- [ ] No criteria were relaxed, checks deleted, or results ignored to obtain a pass.
+- [ ] The review distinguishes expected rejection from tool failure and does not turn unexecuted or missing checks into PASS.
+- [ ] The diff, including new files, contains no personal information, keys, or local-only material.
+- [ ] Selected required checks for the current head/base have actually succeeded, with none missing, skipped, or cancelled. Only language jobs excluded by the plan are skipped.
+- Reviewer / decision / remaining conditions:
 
-- `main` post-merge run (병합 후 기록):
-- 회귀 시 수정 / revert 경로:
-- 릴리스·유료 실행·Furiosa upstream 제출 승인: 별도이며 이 PR 승인에서 추론하지 않습니다.
+## After merge
+
+- Target branch post-merge run (dev / main; record after merging):
+- Fix / revert path for a regression:
+- Release, paid execution, and Furiosa upstream-submission approval remain separate and must not be inferred from this PR's approval.

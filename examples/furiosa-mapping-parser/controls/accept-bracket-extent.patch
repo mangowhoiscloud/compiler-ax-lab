@@ -1,0 +1,11 @@
+diff --git a/furiosa-mapping-macro/src/parser/parser.lalrpop b/furiosa-mapping-macro/src/parser/parser.lalrpop
+--- a/furiosa-mapping-macro/src/parser/parser.lalrpop
++++ b/furiosa-mapping-macro/src/parser/parser.lalrpop
+@@ -103,6 +103,7 @@ Extent: Extent = {
+     Num => Extent::Const(<>),
+     "Symbol" => Extent::Axis(<>),
+     "LParen" <mapping:Mapping0> "RParen" => Extent::Mapping(Box::new(mapping)),
++    "LBracket" <mapping:Mapping0> "RBracket" => Extent::Mapping(Box::new(mapping)),
+ };
+ Expr: proc_macro2::TokenStream = "Expr" => <>;
+ 

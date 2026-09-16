@@ -1,54 +1,134 @@
-# 품질 계약: 통과한 검사가 무엇을 보장하는가
+# Quality contract: what a passing check establishes
 
-**[추론: 파일럿 적용 기준]** 첫 과제는 double-buffering의 테스트 보강이다. 제품 구현을 임의로 바꾸거나 새 품질 프레임워크를 만드는 과제가 아니다. 기존 코드 관례·명령을 재사용하되, 실행 누락과 잘못된 판정 때문에 정상처럼 보이는 변경을 구별한다. 근거는 [Furiosa·Dioxus·Rust 원문 대장](sources.md)에 있다. 아래 기준은 설계에 반영했으며 Rust 검사·CI 구현은 아직 실행하지 않았다.
+This document defines the lab's coding conventions, checks, and acceptance criteria, not a vendor's internal policy. See [verification status in the README](../README.md#verification-status) for recorded results, [AGENTS](../AGENTS.md) for authority boundaries, and the [merge contract](merge.md) for PR handoff. Documentation changes do not alter an already frozen run contract.
 
-### 컨벤션은 기존 구조를 보존하고 변경 이유를 드러내야 한다
+### Language-specific static checks and CI routing
 
-- **읽기와 수정 범위:** 작업할 crate의 구현·직접 호출자·기존 테스트·관련 문서를 먼저 확인한다. 첫 과제의 허용 파일은 새 테스트와 필요한 테스트 helper·설명으로 고정한다. kernel·runtime·macro·build script·dependency·평가 코드 변경이 필요하면 중단해 재합의한다. 다른 기능 정리와 대규모 리팩터링을 함께 넣지 않는다.
-- **Rust 관례:** 기존 이름·module 경계·오류 타입·helper를 재사용한다. 테스트 이름은 조건과 관측할 동작이 읽히게 쓰고, assertion 실패에는 variant·그룹·출력 위치·expected/actual을 남긴다. 독립 기대값은 검증 대상 kernel이나 동일 helper를 다시 호출해 만들지 않는다.
-- **포맷과 lint:** nightly-2026-05-01과 120자 폭, 기존 Clippy 예외를 유지한다. 검사에는 check-only 명령을 사용하고 `--fix`는 후보 수정 단계에서만 허용한다. 전역 pedantic/restriction이나 테스트의 `unwrap` 금지를 새로 강제하지 않는다. 새 blanket allow, warning cap, `#[ignore]`, test 삭제, assertion·오차 완화는 허용하지 않는다. 필요한 예외는 범위·근거·검사 담당자·재검토 조건을 별도 승인한다.
-- **버전·의존성:** source pin·Cargo.lock·실제 rustc/Clippy·host triple·GLIBC·native library tag/hash를 함께 기록한다. LOCAL_PREBUILT도 준비 담당자가 출처와 checksum을 확인한다. checksum 일치와 출처 인증은 구분한다. 기존 lockfile은 평가 중 변경하지 않는다.
-- **위험한 변경:** 첫 과제에서 새 unsafe·FFI·API 변경은 범위 확대다. 이후 허용하면 소유권·aliasing·수명·정렬·동시성·실패 시 부수효과 중 해당 의무와 표적 검사를 선정한다. `Safety` 주석이나 Miri 통과를 NPU·외부 FFI 안전성의 증명으로 쓰지 않는다.
-- **문서·인계:** 변경 목적·보존 동작·버린 대안·검사 결과·미실행 범위를 짧게 남긴다. API가 바뀌면 Errors/Panics/Safety·예제·변경 이력을 맞춘다. 테스트 보강만으로 무관한 changelog나 패키지 버전을 수정하지 않는다.
+Runtime code uses the standard library; only development check tools are added as pinned dependencies. Checks do not apply automatic fixes. Formatting changes also require diff review.
 
-### 품질 검사 순서와 실패 뒤 행동
-
-아래는 **A/B에 동일하게 고정할 수용 기준**이다. A에도 같은 공개 요구·기존 지침·도구를 제공한다. B에만 조사→변경→검사 근거 정리의 절차 안내를 추가한다. 품질 문턱이나 보호 정답의 차이를 B의 효과로 세지 않는다. [추론]
-
-| 단계 | 검사·증거 | 실패 또는 누락 시 행동 |
+| Target | Pinned tools and execution | Coverage and exclusions |
 |---|---|---|
-| Q0 계약·환경 | pin/lock/toolchain/native artifact, 허용 파일·금지 효과, 자원·시간 상한. 무변경 baseline에서 필요한 명령과 테스트 목록 확인 | 준비 실패면 E0/E1 시작 금지. 기존 warning·flaky failure도 사전 기록하며 후보가 숨기지 못하게 한다. |
-| Q1 범위·기계 품질 | diff와 새 파일까지 확인; `make fmt`; 표적 cargo check/clippy. 안정 후보에서 `make check`, `make clippy`, `cargo machete` | 원문 diagnostic으로 수정하거나 이관한다. suppression·test 삭제로 통과시키지 않는다. |
-| Q2 실제 동작 | release 표적 테스트의 이름·실행 수·seed·입력·expected/actual·exit code. 세 variant의 그룹별 값을 별도 기대값과 비교 | 출력 오류는 반례. 0 tests·조건부 조기 return·누락 로그는 성공에서 제외한다. timeout/OOM의 원인과 비용을 남긴다. |
-| Q3 통합·문서 | 안정 revision에서 기존 `make test`. 문서 변경 시 `make mdbook-build`와 해당 예제 실행/`make mdbook-test`; 생성물은 재생성 diff 확인 | workspace 결과와 제외/ignored/NPU 미실행을 분리한다. docs build·파일 생성만으로 실행 성공을 주장하지 않는다. |
-| Q4 독립 최종 확인 | 공개 수정 종료 후 snapshot 고정. 보호 정상/의도 오류 구현에서 생성 테스트를 1회 평가; reference·parser·오차는 후보 밖에서 관리 | 정상 오탐/오류 누락/검사 무효를 분리한다. 실패 뒤 수정은 새 실험이다. 보호 로그를 같은 후보의 repair에 반환하지 않는다. |
-| Q5 사람의 채택 | 목적·구조·API·테스트 의미·잔여 위험 검토. 필수 검사 목록과 실제 receipt를 같은 candidate revision에 결속 | required check가 없거나 skipped/cancelled이면 완료 불가. 담당자가 이유와 함께 기각/보류한다. PR·병합·릴리스는 별도 승인이다. |
+| Four Python files | [pyproject.toml](../pyproject.toml), [requirements-dev.txt](../requirements-dev.txt): Ruff lint/format, mypy; unittest on Python 3.9 and 3.12 | Undefined names, imports, formatting, function types, and 16 behavioral regressions. Existing runtime validation handles `Any` at JSON boundaries; this is not a complete schema-level type proof. |
+| JavaScript and check configuration | [Biome](../biome.json), [package lock](../package-lock.json): `npm ci --ignore-scripts`, `npm run check` | Recommended lint rules, formatting, and import organization. Not TypeScript type checking or proof of semantic preservation. |
+| Rust files and patches | nightly-2026-05-01 rustfmt, `clippy-driver --test -D warnings` and two tests for the standalone reference; `git apply --check` against pinned upstream | SDK test-file syntax and formatting; standalone-reference types, Clippy, and behavior; patch applicability. SDK integration typing, linking, parser execution, and NPU checks remain separate. |
+| Markdown and publication boundary | `node scripts/check.mjs` | Allowlist, local links and anchors, sensitive-data patterns, skill entry points, and required CI contracts. External URL availability and factual claims require separate review. |
+| GitHub Actions YAML and shell | actionlint v1.7.12; also uses ShellCheck when available on the runner | YAML, expressions, job dependencies, and shell diagnostics. Not a substitute for actual cloud execution results. |
 
-`PASS`, `FAIL`, `INVALID`, `NOT_RUN`을 검사별로 보존하고 timeout은 미완료 사유로 남긴다. 적용하지 않는 검사는 실행 전에 담당자가 근거와 함께 제외한다. 사후 N/A로 바꿔 통과율을 높이지 않는다. 기준 수정은 별도 변경이며 영향받은 A/B 결과를 다시 평가한다. 기존 실패는 baseline 문제부터 해소하거나 사전 예외를 합의한다. [추론]
-
-### 실제 명령과 아직 없는 테스트를 구분한다
-
-다음은 공개 소스에서 확인한 **기존 명령·테스트 이름**이다. 승인된 x86-64 환경과 native dependency 준비 뒤 실행한다. `--list`도 빌드를 유발할 수 있으므로 무비용 조회가 아니다. [실측: 소스·미실행]
+Reproduce Python checks in a separate environment with the commands below. Python 3.9 is a regression check for the existing compatibility floor, not a recommended version for a new production environment.
 
 ```bash
-make fmt
-cargo test -p furiosa-opt-examples --release --test binary_add_tests -- --list
-cargo test -p furiosa-opt-examples --release --test binary_add_tests -- --exact test_binary_add_2048
+python3 -m venv .local/static-env
+.local/static-env/bin/python -m pip install -r requirements-dev.txt
+.local/static-env/bin/python -m ruff check scripts tests examples/group-reduction
+.local/static-env/bin/python -m ruff format --check scripts tests examples/group-reduction
+.local/static-env/bin/python -m mypy
+.local/static-env/bin/python -m unittest discover -s tests -v
+npm ci --ignore-scripts
+npm run check
+node scripts/check.mjs
 ```
 
-기존 checkpoint 묶음은 `make check`, `make clippy`, `cargo machete`, `make test`다. 공개 Makefile에는 `--all-features`가 없으며 `make test`는 release profile이다. `clippy-npu`는 별도 target으로 이 CPU 파일럿에 자동 추가하지 않는다. Cargo의 `--all-targets`는 모든 feature 조합이나 doctest 검사를 뜻하지 않는다. [실측]
+[quality.yml](../.github/workflows/quality.yml) executes the routing; [check.mjs](../scripts/check.mjs) selects and aggregates jobs. `lab-system` always runs. A `.py` change selects Python; `.mjs` or npm/Biome configuration selects JavaScript; `.rs` or `.patch` selects Rust. Shared instructions, quality/CI configuration, and unknown paths select all language checks. README, merge-documentation, or PR-template-only changes do not select language jobs. Deleted and renamed files are evaluated using both old and new paths. An unreadable comparison base selects all checks.
 
-승인 뒤 `CARGO_BUILD_JOBS`, 테스트 스레드, 전용 `CARGO_TARGET_DIR`, 기타 내부 thread pool 한도와 cache 시작 상태를 고정한다. 직접 Cargo 명령에 `--locked`를 추가하는 재현 정책은 기존 Makefile과 구분한다. Make target을 유지할 경우 전후 lockfile hash도 대조한다. lock 변경이 필요한 준비는 A/B 시작 전에 끝낸다. `make mdbook-test`처럼 내부에서 target directory를 지정하는 명령은 해당 경로까지 후보별로 격리한다. [추론]
+The required check remains `lab-ci`. Every selected job must return `success`; `skipped` is allowed only for language jobs excluded by the selection plan. Failed, cancelled, unexpectedly skipped, or missing required jobs and missing plans are rejected. Reproduce selection and aggregation acceptance/rejection cases with `node scripts/check.mjs --self-test`. Changes to the checker itself select all jobs. Do not hide failures with `continue-on-error`.
 
-`double_buffering_tests.rs`는 만들 파일의 **제안명**이다. 실제 생성 뒤 목록에서 발견되고 assertion이 실행되는지 확인한다. 정상 구현에서는 통과하고, 실행 가능한 알려진 오류에서는 의도한 값 비교로 실패해야 한다. compile error나 runner crash는 오류 검출이 아니다. 테스트 보강 과제는 정상 baseline을 깨뜨릴 필요가 없으며, 오류 대조군을 구별하는지가 핵심이다. [추론]
+When adding a tool or rule, update the affected language's code, configuration, CI, and this table together. CI does not measure instruction compliance or model problem-solving performance. Full SDK checks follow the separate commands and environment contract below.
 
-### Dioxus에서 옮길 것은 탐색 실패를 작은 회귀 검사로 남기는 방식이다
+### Input and numerical contracts
 
-Dioxus의 현재 코드는 구조화된 동작을 incremental renderer와 fresh rebuild 결과로 비교하고, 축소한 실패 입력을 일반 테스트에서 strict 조건으로 재생한다. 긴 libFuzzer 탐색은 별도 실행이다. 전체 corpus의 coverage 재생은 비교 결과를 의도적으로 버리는 코드가 있어 그 성공을 정확성 통과로 읽을 수 없다. [실측: 위 원문 대장]
+Freeze shape, dtype, formula, input domain, tolerances, and an independent oracle before checking. The [double-buffering contract](kernels/double-buffering.md) defines numerical obligations for finite integer inputs; the [parser contract below](#mapping-parser) defines AST and error-location expectations. Do not fill unknown values or missing evidence with success, or treat CPU results as NPU evidence.
 
-첫 파일럿은 고정 경계 입력으로 시작한다. 후속 탐색은 원본 실패→축소 입력→원인 확인→일반 회귀 테스트로 남긴다. 테스트 수·coverage 비율만 목표로 삼지 않는다. 후보가 생성한 expected를 그대로 갱신하거나 검사 중 corpus를 덮어쓰지 않는다. parser/macro 변경에는 적법·부적법 입력과 예상 diagnostic, buffer 변경에는 값·수명·완료 순서의 검사를 선정한다. host에서 확인할 의무와 장치가 필요한 의무는 구분한다. [추론]
+### Conventions preserve existing structure and explain the change
 
-Fuzzing, Miri, sanitizer, 광범위 dependency/보안 감사는 해당 위험과 실행 가능성이 확인될 때 추가한다. 첫 과제에는 새 framework·custom lint·CI 서비스가 필요하지 않다. 장기 탐색·공급망 정책·실기기 검증을 E1의 효과에 합치지 않는다. [실험 계약](experiment.md), [판단 컨텍스트](context.md)
+- Read the affected crate's implementation, direct callers, existing tests, and documentation. Define allowed files and behavior to preserve. Stop and agree on a new scope before expanding it; do not mix unrelated refactoring into the change.
+- Reuse existing names, modules, error types, and helpers. Test names describe conditions and behavior; failures preserve the input, location, expected/actual values, or original diagnostic. Do not derive expected values from the kernel under test or the same calculation helper.
+- Keep `nightly-2026-05-01`, the 120-column width, and existing Clippy exceptions. Checks are check-only; `--fix` belongs only in the candidate-editing phase. Do not add global pedantic/restriction rules or a ban on `unwrap` in tests.
+- Do not obtain a pass through new blanket allows, warning caps, `#[ignore]`, test deletion, or weaker assertions/tolerances. Exceptions require separate approval of scope, rationale, owner, and reconsideration criteria.
+- Record the source pin, Cargo.lock, actual rustc/Clippy versions, host triple, GLIBC, native tag/hash, and licenses. Verify provenance and checksums for `LOCAL_PREBUILT` too; a matching hash does not authenticate provenance. Do not change the lockfile during evaluation.
+- Add ownership, aliasing, lifetime, alignment, concurrency, and failure-effect obligations only where relevant to authorized unsafe, FFI, or API changes. A `Safety` comment or passing Miri run does not prove NPU or external FFI safety.
+- Hand off the purpose, preserved behavior, choice rationale, rejected alternatives, check results, and unexecuted scope. Align Errors/Panics/Safety documentation, examples, and change history for API changes; test-only work does not justify unrelated version or changelog edits.
 
+### Quality gates and failure handling
 
-PR 준비·통합 revision 확인·병합 후 검사 절차는 [병합 규약](merge.md)을 따릅니다. 이 문서의 Q0–Q5는 컴파일러 실험 기준이며 현재 lab 문서 CI의 PASS와는 별개입니다.
+Freeze identical public requirements, tools, and acceptance criteria for both A/B arms; vary only the additional working procedure. Do not attribute differences in protected answers or quality thresholds to the procedure. Do not give candidates the complete operator documentation.
+
+| Gate | Required checks and evidence | Action on failure or missing evidence |
+|---|---|---|
+| Contract and environment | Pin/lock/toolchain/native dependencies, allowed files and prohibited effects, resource/time limits, commands and test inventory for an unchanged baseline | Do not start the candidate comparison if preparation fails. Record existing warnings and flaky failures in advance. |
+| Scope and code quality | Review the diff including new files; `make fmt`, targeted check/Clippy; `make check`, `make clippy`, and `cargo machete` for a stable candidate | Repair or hand off using the original diagnostic; do not conceal it with suppression. |
+| Output behavior | Exact release-mode test names and counts, seeds, inputs, independent expected values, actual values, and exit status | A value mismatch is a counterexample. Zero tests, early returns, and missing logs are not success. |
+| Integration and documentation | `make test` on a stable revision; for upstream documentation changes, `make mdbook-build` plus relevant examples/`make mdbook-test`; regenerated-artifact diff | Separate ignored, excluded, and unexecuted NPU checks. Check lab documents with `node scripts/check.mjs`; a documentation build is not an execution result. |
+| Independent final evaluation | After public revisions finish and both snapshots are frozen, run each frozen normal/intentional-fault evaluation once; manage the reference, result parser, and tolerances outside candidate control | Separate false alarms on normal code, missed faults, and invalid checks. Do not return protected logs for repair of the same candidate; later changes require a new experiment. |
+| Human acceptance | Purpose, structure, API, test meaning, residual risks, and required receipts for the same candidate revision | Missing, skipped, or cancelled required checks are not completion. Acceptance, PR creation, merge, and release are separate decisions. |
+
+Preserve `PASS / FAIL / INVALID / NOT_RUN` and the stop reason for each check. A timeout is incomplete execution. Define exclusions, their reasons, and their owners before running; do not improve a pass rate with retrospective N/A labels. Resolve baseline failures first or agree on an exception in advance. Review changes to the reference separately and reevaluate affected results.
+
+### CPU smoke observability and record format
+
+Reuse the existing commands, logs, and collection paths. The names below describe operator-record roles, not a requirement for a new framework or observability service.
+
+| Record | What the producer records | What the reviewer verifies |
+|---|---|---|
+| Contract | Version, run ID, authorized scope, source/lock/toolchain/native dependencies, argv/cwd, seed/shape/dtype/oracle, and limits | Agreement with the actual environment and conditions; keep account and resource IDs private. |
+| Raw phase output | stdout/stderr, command, UTC start/end, `time -v`, original command exit, and capture exit | Original diagnostics and execution counts; PTY recordings support replay but do not replace raw streams or establish a global order between them. |
+| Resources | cgroup/VM limits, thread settings, five-second `vmstat` samples, before/after `df/du` with units | Distinguish maximum process RSS from whole-workload peak; the first `vmstat` CPU row is the average since boot, while later rows cover sample intervals. |
+| Collection manifest | Relative path, role, bytes, SHA-256, required/optional status, present/missing/partial status, and comparison with the original | Completeness of required evidence; hashes identify bytes, not meaning, order, or correctness. |
+| Decision and cleanup | Passed/failed/ignored/filtered counts, STOP reason, collection result, deletion of created resources, and a fresh resource query | Verify test completion and operational cleanup separately; preserve other tasks' resources and records. |
+
+Bound output collection time as well. A child retaining a pipe or a failed collection leaves incomplete evidence. Distinguish preparation failure from a worker that never started. Compare copies collected during execution with the final originals before deletion. Do not claim lossless capture across an uncollected interval caused by network loss or forced termination. Exit 137 alone does not establish OOM; inspect cgroup, kernel, and controller evidence together.
+
+Preserve reproducible evidence as in Dioxus's [failing input and original error](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/packages/fuzz/src/case.rs#L119) and [expected/actual diagnostics](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/packages/fuzz/src/harness.rs#L224). Neither a coverage count nor a replay that discards comparison results establishes correctness. Do not overwrite expected values or the corpus while checking. Add fuzzing, Miri, or sanitizers only when the risk is relevant and execution is feasible.
+
+### Actual commands and execution evidence
+
+Link run/attempt IDs, candidate/parent candidate, actual commands, and results at handoff. Preserve observation order and tool call/result pairs using identifiers present in the original record; do not invent missing times, order, or IDs. The current Python demo's attempt record is a check receipt, not a complete agent-conversation trajectory. If a separate agent transcript exists, link it through a restricted locator.
+
+The producing system's record is the original; normalized records and summaries are derivatives. Distinguish original event time, collection time, publication time, scope completeness, and replayability. Identify truncated output, missing pairs, and unverified intervals. Record public redactions separately with their own digest; do not publish private prompts, credentials, or hidden reasoning. A receipt retaining only a collection manifest and hashes is not a recoverable backup of the original.
+
+On compatible x86-64 Linux, first prepare the dependencies in the [pinned upstream README](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/README.md). The source pin is `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`. Fix job counts, test/internal thread counts, a dedicated `CARGO_TARGET_DIR`, initial cache state, and time/output/resource limits. Even `--list` can trigger a build.
+
+```bash
+cargo +nightly-2026-05-01 fmt --all -- --check
+cargo +nightly-2026-05-01 test --offline --locked -p furiosa-opt-examples --release --test binary_add_tests -- --list
+cargo +nightly-2026-05-01 test --offline --locked -p furiosa-opt-examples --release --test binary_add_tests -- --exact test_binary_add_2048 --test-threads=1
+```
+
+The [existing smoke test](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-opt-examples/tests/binary_add_tests.rs) uses seed=42, two `i8[2048]` inputs, an `i32[2048]` output, and a host i32 elementwise-addition oracle. Verify exactly one pass, zero failures, zero ignored, one filtered, successful command/capture exits, and an unchanged lockfile. Successful arrays are not printed: record `NOT_EMITTED` rather than fabricating values.
+
+These commands use the plain Cargo CPU path. Do not merely append `test` to the [upstream Dockerfile](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/Dockerfile)'s default `cargo furiosa-opt` entrypoint; explicitly select Cargo or a shell. The [Makefile](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/Makefile)'s `make test` runs release-mode checks; `clippy-npu` is separate. `--all-targets` does not mean every feature combination or doctest. Distinguish the direct commands' `--locked` policy from the Makefile, and isolate target paths set internally by mdbook too.
+
+Old mtimes on copied files can cause reuse of a previous binary. Connect source hashes, the copy method, recompilation logs, and the executed binary; rebuild or use a fresh target when uncertain. Compare test listings and execution per target; do not count child-process summaries twice. Distinguish expected rejection in `compile_fail` doctests, ignored tests, and NPU-only targets that execute zero tests on CPU.
+
+### Mapping parser
+
+The [test patch](../examples/furiosa-mapping-parser/tests.patch) checks the contracts of the pinned [grammar](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-mapping-macro/src/parser/parser.lalrpop), [AST/parser](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-mapping-macro/src/parser/mod.rs), and [diagnostics](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/furiosa-mapping-macro/src/parser/diagnostic.rs). It checks exact ASTs or error messages and byte ranges, not merely whether `parse_mapping` and `parse_index` accept an input. Index inputs append `: value` and must preserve one assignment and the value token `value`.
+
+| Shared input | Extent preserved in `Stride(Symbol(A), extent)` |
+|---|---|
+| `A / 4` | `Const(Lit(4))` |
+| `A / {N}` | `Const(Const(tokens N))`; outer braces excluded |
+| `A / B` | `Axis(B)` |
+| `A / (B, C)` | `Mapping(Pair(Symbol(B), Symbol(C)))`; left/right order preserved |
+
+`[B]` is an atom represented as `Symbol(B)` at both entry points, but `A / [B]` is not a valid Extent. Both modes must identify `[` at `4..5` and return the corresponding message below. EOF in `A /` points to the final `/` at `2..3`, distinguishing mapping and index modes. Ranges are zero-based, end-exclusive byte ranges.
+
+```text
+unexpected token `[`; expected an axis name, an integer, a braced Rust expression, or `(`
+unexpected end of mapping expression; expected an axis name, an integer, a braced Rust expression, or `(`
+unexpected end of index expression; expected an axis name, an integer, a braced Rust expression, or `(`
+```
+
+The change is limited to two helpers and six tests inside `cfg(test)` in `diagnostic.rs`, preserving the existing six tests. Product grammar, AST, diagnostics, dependencies, and lockfile remain unchanged. Verify the inventory and execution counts for the six-test normal baseline and twelve-test candidate, formatting, and targeted release-mode Clippy separately.
+
+```bash
+git apply --check /path/to/compiler-ax-lab/examples/furiosa-mapping-parser/tests.patch
+git apply /path/to/compiler-ax-lab/examples/furiosa-mapping-parser/tests.patch
+cargo +nightly-2026-05-01 fmt --all -- --check
+cargo +nightly-2026-05-01 test --offline --locked -p furiosa-mapping-macro --lib --release -- --list
+cargo +nightly-2026-05-01 test --offline --locked -p furiosa-mapping-macro --lib --release -- --nocapture --test-threads=1
+cargo +nightly-2026-05-01 clippy --offline --locked -p furiosa-mapping-macro --all-targets --release -- -D warnings
+```
+
+Add the [public fault patch](../examples/furiosa-mapping-parser/controls/accept-bracket-extent.patch) only in a separate checkout and target. Add `parser::diagnostic::tests::brackets_are_atoms_not_extents --exact` to the same test command. After successful compilation, verify that exactly one test executes and fails at the intended assertion. This control fails first at the mapping assertion; it does not establish independent fault detection for index mode. Compile errors, zero tests, OOM, and missing evidence are not detection.
+
+This example checks ASTs and `syn::Error` for tokenizable DSL input. It does not establish full macro-expansion, Rust typing, mapping-execution, or NPU-lowering correctness. The public intentional fault is neither an upstream defect nor protected evaluation material. Judge static compilation, CPU values, schedules, device measurements, and human acceptance on their respective evidence. See the [merge contract](merge.md).
