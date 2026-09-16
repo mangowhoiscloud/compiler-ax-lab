@@ -1,46 +1,39 @@
 # Compiler AX Lab
 
-An experiment in turning coding-agent drafts into **changes a compiler developer can review**. The focus is not how much code was generated, but what changed and which checks actually verified it.
+Compiler AX Lab explores how to turn coding-agent drafts into reviewable software changes. It connects a bounded change to its cause, preserved behavior, executed checks, and remaining human decisions.
 
-Successful compilation does not establish that output semantics were preserved. Correct values may come from a stale binary; a failed test may detect an environment problem rather than the intended fault. This lab fixes the change scope first, then uses independent expected values, normal/fault controls, and source-to-binary evidence to distinguish those cases.
+The public repository contains a Python standard-library runner, Rust test examples for the public `furiosa-opt` SDK, and the contracts needed to reproduce and review them. It is independent research, unaffiliated with FuriosaAI; it does not reproduce Furiosa's internal production compiler or NPU.
 
-```text
-Problem and preserved behavior → Cause hypothesis → Bounded change → Fixed checks
-                                                                         ↓
-                                        Cross-check source, commands, values, and exit status
-                                                                         ↓
-                                                         Human review → Separate merge
-```
+## How it works
 
-This is independent research, unaffiliated with FuriosaAI. It uses Rust examples from the public `furiosa-opt` repository; it does not reproduce Furiosa's internal production compiler or NPU.
+1. **Bound the task.** Fix the editable files, behavior to preserve, reference values, checker, and execution budget before modifying a candidate.
+2. **Check the change.** Compare actual results with independent expectations. Use normal and intentional-fault controls to distinguish a useful test failure from a build or environment failure.
+3. **Preserve the evidence.** Link the checked source, commands, binary where applicable, raw output, and exit status. A stale binary or zero executed tests cannot establish success.
+4. **Hand off for review.** Present the smallest change with its evidence and unresolved risks. Passing checks, accepting a result, merging code, and releasing software are separate decisions.
 
-## Public system
+## Quick start
 
-| Component | Responsibility | Entrypoint |
-|---|---|---|
-| Work rules | Define request scope, conventions, Git flow, and publication boundaries. | [AGENTS.md](AGENTS.md) |
-| Experiment supervision | Resume the authorized phase, validate raw evidence, preserve failures, and collect before advancing. | [Operator program](program.md#supervise-an-approved-experiment) |
-| Execution skill | Diagnose, change, and check a separate candidate copy within a finite attempt budget. | [run-bounded-change-loop](.agents/skills/run-bounded-change-loop/SKILL.md), [program.md](program.md) |
-| Local runner | Freeze the contract and checker; revalidate attempt reservations, raw evidence, copies, and results. | [trial.py](scripts/trial.py), [regression tests](tests/test_trial.py) |
-| Rust test cases | Check numerical semantics for three kernels and grammar, AST, and diagnostic locations for the parser. | [double-buffering](docs/kernels/double-buffering.md), [mapping parser](docs/quality.md#mapping-parser) |
-| Review and PR skill | Link the current diff to the actual checked revision and update the existing PR. | [review-to-verified-pr](.agents/skills/review-to-verified-pr/SKILL.md), [merge contract](docs/merge.md) |
-
-The public runner is a Python standard-library demo. The Rust cases are tests and patches reproduced through Cargo in a compatible x86-64 environment, not through `trial.py --task furiosa`. A/B operator runners, account records, protected inputs, and raw evidence remain local.
-
-## Quick checks
-
-Run from the root of a Git clone. Git, Node.js 22 or later, and Python 3.9 or later on a Unix-like system are sufficient to check the public system without extra packages.
+From the root of a Git clone, use Git, Node.js 22 or later, and Python 3.9 or later on a Unix-like system. These checks require no additional packages:
 
 ```bash
 node scripts/check.mjs
 python3 -m unittest discover -s tests -v
 ```
 
-The first command checks public files, sensitive information, reading routes, and PR/CI contracts. The second checks normal, failed, and stopped runner behavior and validation of stored evidence. Neither checks Rust or NPU correctness.
+The first command checks the public-file allowlist, sensitive-data patterns, documentation links, and CI contracts. The second runs the local runner's regression tests. Neither executes the Rust SDK or an NPU.
 
-Before submitting a change, also run the [language-specific quality checks](docs/quality.md#language-specific-static-checks-and-ci-routing). CI always checks public files, documentation, and workflows. Changed paths select Python Ruff, mypy, and regression checks; JavaScript Biome checks; or Rust formatting, independent-reference Clippy/tests, and patch checks. `lab-ci` rejects failed, cancelled, or missing selected jobs. Only the check tools are development dependencies; the demo does not require them.
+To try a bounded change, follow the [group-reduction demo](program.md). Copy the intentionally faulty seed; do not edit the tracked example. The default budget is two checks, including the baseline, with ten seconds per check invocation. Edit only in `REVISE`. `READY_FOR_REVIEW` is a handoff, not approval; missing evidence, timeouts, and exhausted limits produce `STOP`.
 
-Follow [program.md](program.md) for the change demo. The seed contains an intentional defect, so edit only a copy. The default budget is two checks including the baseline, with ten seconds per invocation. Edit only in `REVISE`; `READY_FOR_REVIEW` is a human handoff state, not automatic approval. Missing evidence, timeouts, and exhausted limits leave the run in `STOP`.
+## Public system
+
+| Component | Purpose | Entrypoint |
+|---|---|---|
+| Local runner and tests | Execute the Python demo and validate attempt budgets, candidate copies, raw evidence, and stored results | [trial.py](scripts/trial.py), [regression tests](tests/test_trial.py) |
+| Rust examples | Check numerical values for three kernels, plus parser ASTs and diagnostic locations | [double-buffering contract](docs/kernels/double-buffering.md), [parser contract](docs/quality.md#mapping-parser) |
+| Execution procedure | Diagnose and check a candidate copy; supervise separately authorized experiments | [program.md](program.md), [execution skill](.agents/skills/run-bounded-change-loop/SKILL.md) |
+| Review and publication | Connect the current diff to its checks, ownership, and permitted Git actions | [AGENTS.md](AGENTS.md), [review skill](.agents/skills/review-to-verified-pr/SKILL.md), [merge contract](docs/merge.md) |
+
+The Python runner has no Rust adapter: `trial.py init --task furiosa` does not execute a compiler task. Rust cases use Cargo in a compatible x86-64 environment. Private A/B controllers, protected inputs, and raw experiment records are not part of the public checkout.
 
 ## Reproducing the Rust cases
 
@@ -52,70 +45,64 @@ The baseline is `furiosa-opt` v0.8.1, commit `9b9cf0fdc78df00cdc430eae725a5ad908
 
 ## Verification status
 
-The following evidence comes from distinct executions. Test counts, element comparisons, and A/B evaluation units are not interchangeable and are not summed.
+Recorded CPU results as of **2026-09-16**. These are distinct executions: test counts, value comparisons, and A/B units are not interchangeable and must not be summed.
 
 | Execution | Verified result | Scope |
 |---|---|---|
-| AWS unchanged CPU smoke | One designated assertion passed; 94 files collected and checked; created resources reclaimed | Native x86 environment readiness, not a new candidate's performance |
-| Public double-buffering test improvement | Three SDK tests, 18 input executions, and 46,080 matching values; two helper tests passed. The public fault copy compiled, then failed the designated numerical assertion | CPU checks for fixed shapes and exactly representable bf16 inputs |
-| Public mapping-parser test improvement | Expanded from six to twelve passing checks. The designated check detected the public fault copy's incorrect acceptance | ASTs and diagnostics through two entrypoints. The fault copy failed at the mapping assertion first |
-| Separate source-clean parser reproduction, 2026-09-16 | Baseline 6/6 and candidate 12/12 passed; the public fault compiled and failed the one designated assertion. Formatting and targeted release Clippy passed | Three fresh source trees and separate empty build targets; downloaded dependencies/toolchain reused. Initial preparation failure preserved separately |
-| CPU workspace integration of both changes | 720 regular tests, 55 doctests, and all-target release Clippy passed | Default features. Excludes 17 ignored tests; 44 of the 55 doctests are `compile_fail` |
-| Local runner | Sixteen regression tests passed | Python demo and evidence handling, separate from compiler correctness |
+| Unchanged AWS CPU smoke | One designated assertion passed | Native x86 environment readiness; no candidate improvement measured |
+| Public double-buffering tests | Three SDK tests, 18 input executions, 46,080 matching values, and two helper tests passed; a compiled public fault failed the intended assertion | Fixed shapes and exactly representable bf16 inputs |
+| Public mapping-parser tests | Baseline 6/6 and candidate 12/12 passed; a compiled public fault failed the intended mapping assertion | ASTs and diagnostics through two entrypoints; fault detection established for the mapping assertion |
+| Separate source-clean parser replay | Baseline 6/6 and candidate 12/12 passed; one selected public-fault test failed as intended; formatting and targeted Clippy passed | Fresh source trees and empty build targets, but reused dependencies/toolchain; initial preparation failure recorded separately |
+| CPU workspace integration | 720 regular tests, 55 doctests, and all-target release Clippy passed | Default features; 17 ignored tests excluded; 44 doctests are `compile_fail` |
+| Python runner | 16 regression tests passed | Demo behavior and evidence handling, not compiler correctness |
 
-Local CPU experiments use Ubuntu 24.04 amd64/Rosetta, 2 CPUs, 6 GiB, and Cargo jobs=1. The remote unchanged smoke is a separate AWS x86 run. Verified scope excludes NPU timing, overlap and performance, and full non-default-feature coverage. Execution success does not itself grant human acceptance.
+Local CPU experiments used Ubuntu 24.04 amd64/Rosetta, 2 CPUs, 6 GiB, and Cargo jobs=1. The AWS smoke was a separate native-x86 run. These results do not establish NPU correctness, overlap, timing, or performance, nor full non-default-feature coverage.
 
-### A/B pilot: execution complete, frozen B adopted
+### A/B pilot: tied controls, bounded B selection
 
-**Final execution completed 2026-09-16 19:39 KST.** The pilot compares A, given the detailed common task, with B, given the same task plus a research, diagnosis, change, and verification procedure. It uses one task and one pair, with candidate generation in a fixed B-then-A order.
+The frozen pilot compared one pair on one Rust test-improvement task. A received the common task; B also received a research, diagnosis, change, and verification procedure. Final execution completed on 2026-09-16 at 19:39 KST.
 
 | Item | A: common task | B: additional procedure |
 |---|---|---|
-| Generation | Draft complete | Draft complete |
-| Public checks | After one revision, formatting, compilation, three SDK tests, one helper test, and Clippy passed; earlier interruption and recovery records preserved | After one revision, formatting, compilation, three SDK tests, one helper test, and Clippy passed |
-| Source freeze | Complete; source and review message frozen | Complete; source and review message frozen |
-| Private implementation build | Compiled; source and binary linked to the frozen candidate | Compiled; source and binary linked to the frozen candidate |
-| Final normal/fault comparison | Three normal controls passed (TN); one qualified fault detected (TP) | Three normal controls passed (TN); one qualified fault detected (TP) |
-| Invalid or unexecuted final units | 0 of 4 | 0 of 4 |
-| Human decision, 2026-09-16 | Not selected; retained, not rejected as incorrect | User adopted the frozen test change for the fixed-shape CPU scope after AI-assisted review |
+| Final controls | Three normal controls passed; one qualified fault detected | Three normal controls passed; one qualified fault detected |
+| Invalid or unexecuted units | 0 of 4 | 0 of 4 |
+| Owner decision | Retained, not selected; not rejected as incorrect | Frozen test change selected for the fixed-shape CPU scope |
 | Human active work time | Not measured | Not measured |
 
-All eight final units ran once after both source trees and review messages were frozen. Each executed exactly one selected SDK test, with none ignored. Review traced the two expected failures to the intended numerical assertions, not compilation, timeout, or unrelated panics. Source snapshots, binary identities, complete output vectors, test counts, and runtime exits agreed; all 825 final artifacts were rehashed. Raw observations remain separate from operator classifications and human acceptance. Owned staging/runtime containers and temporary images were removed after collection.
+All eight units ran after both candidates were frozen. Each executed one selected SDK test, with none ignored; the two expected failures were traced to the intended numerical assertions. **The control result was a tie.** Source, binary, output, and exit records were cross-checked, and protected results were not returned for candidate repair.
 
-**The final control result is a tie: no observed false positives or false negatives in this small control set.** A exercised six fixtures per normal implementation and B four; these are different coverage choices, not extra independent evaluation units. Both used integer scalar references and exactly representable bf16 fixtures. This establishes feasibility of generating and checking bounded Rust test changes, not a measured benefit from B's extra procedure, an upstream defect discovery, or NPU performance.
+The project owner selected frozen B after an [AI-assisted source review](https://github.com/mangowhoiscloud/compiler-ax-lab/pull/11#pullrequestreview-5223709126) of output-coordinate discrimination and explicit fixture bounds. That coverage argument was not an additional scored fault execution. The selection is local CPU-test adoption, not evidence that B's procedure is more effective, a personal human Rust audit, or Furiosa approval. The public Rust example remains the earlier, separately measured reference; it is not the frozen B candidate.
 
-**Why select B despite the tie?** [Source review](https://github.com/mangowhoiscloud/compiler-ax-lab/pull/11#pullrequestreview-5223709126) found that B's two identity-digit fixtures jointly distinguish all 2,560 output coordinates under a fixed permutation, while A's joint fixture signatures distinguish 2,332. B also checks the fixture/reference integer bounds explicitly. This coverage argument, not an extra scored fault run, motivated the user's limited adoption. The technical review used OpenAI Codex (`gpt-6-astra`, reasoning effort `ultra`); candidate generation requested the same model with effort `high`. It is not a personal human Rust audit or Furiosa approval. Frozen originals and results remain unchanged, and the published Rust example remains the earlier separately measured reference rather than B.
+Candidate generation used a fixed B-then-A order; an approved account change and host-cache cleanup also prevent a clean productivity comparison. Human active time was not measured. Different fixture counts do not create additional independent evaluation units.
 
-Protected results were not returned for candidate repair, and no model calls were added during final evaluation. Budgets fixed before generation remained unchanged; interruptions and resumptions are recorded separately. The subscription account changed with user approval, and host caches were cleaned during execution, so this is not a strictly single-factor-controlled productivity experiment. Model runtime does not substitute for human work time. Broader 1/2-slot calibration and independent-task transfer remain outside this completed pilot.
+A separate synthetic status-reconstruction task also ended in a tie: one generation per arm, both exactly matching the fixed answer. No benefit from the extra procedure was observed. That experiment neither enlarged the Rust A/B population nor tested transfer of an adopted procedure.
 
-### Separate follow-ups: reproduction and status reconstruction
+## Verified boundaries
 
-The public parser replay rebuilt the pinned source and both public patches without reusing compiled targets. Baseline and candidate ran all 6 and 12 tests respectively, with none ignored or filtered. The fault run selected exactly one test, which failed at the intended mapping assertion; 11 were filtered out. Three source trees and their executed binaries were checked before collection. The first attempt stopped during environment inventory with no compilation or tests; a separate authorized attempt narrowed that inventory and corrected the container permission while keeping source, assertions and resource limits fixed. The 2-CPU/6-GiB offline worker completed without OOM or timeout. Both owned workers were removed after preserving sources, logs and binaries. This is not an independently rebuilt dependency environment or native-x86 performance measurement.
-
-A new synthetic developer-handoff task addressed two observed operator errors: omitting completed checks and misreporting a deadline. Both arms received the same facts, output contract and correctness rules; only B received an additional receipt-first/as-of procedure. One fresh generation per arm produced byte-identical answers. Both outputs were frozen before grading, and both exactly matched the fixed answer: stale/future receipts excluded, zero-test verification marked invalid, 120 seconds remaining, human acceptance pending. Input/capture integrity held. Preparation errors, feature warnings and unsuccessful tool commands were retained. **No benefit from the extra procedure was observed in this one pair.** This was status reconstruction, not a compiler repair, human-productivity measurement or accepted-policy transfer.
-
-The separate proposed procedure has not been adopted as a proven improvement; selecting the frozen Rust B test change does not establish policy transfer. Nebius provisioning and Furiosa NPU/device work are excluded from this continuation; no new execution engine, database or cloud service was added. These follow-ups have separate run identities and do not enlarge or alter the frozen Rust A/B population.
+- **CPU values, compilation, schedules, and device measurements answer different questions.** A passing host test does not establish NPU behavior or performance.
+- **CI is narrower than the recorded SDK experiments.** It checks public contracts and selected language checks. Rust CI covers formatting, the standalone reference, and patch applicability; it does not install the native SDK or run the full compiler, NPU, or private A/B evaluation.
+- **The runner is not a security sandbox.** File hashes and separate processes under the same user account do not isolate malicious candidates or protect evaluation secrets. Use it only for trusted local demonstrations.
+- **Procedure effectiveness remains unestablished.** A later independent task must actually load a reviewed procedure and evaluate transfer, regressions, and cost. Neither B's selection nor a repository merge supplies that evidence.
 
 ## Changes and publication
 
-Git flow is feature branch → `dev` → `main`. Squash feature changes through a PR into `dev`; promote verified `dev` through a separate merge-commit PR into `main`, preserving shared ancestry for future promotions. Both stages require current head/base CI and an explicit merge request. See the [merge contract](docs/merge.md) and [PR template](.github/pull_request_template.md).
+Use feature branch → `dev` → `main`: squash feature PRs into `dev`, then promote verified `dev` with a merge-commit PR. Both stages require current head/base CI and an explicit merge request. Follow the [merge contract](docs/merge.md), [PR template](.github/pull_request_template.md), and [language-specific quality checks](docs/quality.md#language-specific-static-checks-and-ci-routing).
 
-Use Draft only while implementation or required checks remain. Mark reviewable changes Ready for review; Draft status is not a substitute for review or merge authorization. Do not bypass merging with direct branch pushes or rewrite history. Human acceptance of an experiment result is separate from merging a repository change.
+Use Draft while implementation or required checks remain; mark a checked diff Ready for review. The required `lab-ci` gate rejects failed, cancelled, missing, or unexpectedly skipped selected jobs. Do not push directly to shared branches or rewrite history. Human acceptance of an experiment result remains separate from a merge.
 
-The public tree contains executable code, tests, skills, and necessary contracts only. Research originals, design history, presentations, experiment logs, protected evaluations, and credentials are Git-ignored local material. The public snapshot is not a live dashboard; it is updated after the next completed check. Earlier public material remains in Git history.
+Research originals, design history, presentations, protected evaluations, raw logs, and credentials remain Git-ignored local material. The public tree contains executable examples and their necessary contracts, not a live experiment dashboard. Earlier published material remains in Git history.
 
 ## Design references
 
-[The Last AI Built by Humans: Toward Genuine Recursive Self-Improvement, v2](https://arxiv.org/pdf/2609.11873v2), §§2.2–3.3, distinguishes in-task output refinement (B0) from persistent improvement execution (L1) and strategy autonomy (L2). This is the authors' survey taxonomy, not a certification. Our frozen one-task A/B tests candidate outputs, not a successor agent that inherits an improved procedure: it is B0-level evidence, despite substantial execution automation. Committing instructions or merging code alone does not demonstrate L1/L2 self-improvement. The actionable extension is explicit inheritance evidence: a later independent task must load a reviewed policy revision and test transfer, regressions, and cost under fixed criteria. The [operator program](program.md#supervise-an-approved-experiment) records that boundary; this pilot does not perform that later experiment. No model-weight training or autonomous evaluator changes are added.
+These sources inform specific operating choices; they do not establish equivalent implementations or results. The [operator program](program.md#supervise-an-approved-experiment) defines this lab's execution scope.
 
-- [autoresearch procedure](https://github.com/karpathy/autoresearch/blob/228791fb499afffb54b46200aca536f79142f117/program.md): separate editable files, fixed evaluation, and execution records. This lab ends with finite attempts and human review rather than indefinite search.
-- [Darwin Godel Machine, v3](https://arxiv.org/pdf/2505.22954v3) and its [pinned outer loop](https://github.com/jennyzzt/dgm/blob/a565fd2d1dca504ef5104a7cc0f3bdc4ab9b4fd2/DGM_outer.py): motivate parent/candidate revision and evaluation locators, while candidate retention remains separate from adoption. Existing Git/run records are sufficient for that proposed extension. The synthetic follow-up did not evaluate inherited, human-adopted policy or implement DGM's search.
+- [autoresearch procedure](https://github.com/karpathy/autoresearch/blob/228791fb499afffb54b46200aca536f79142f117/program.md): editable-file boundaries, fixed evaluation, and execution records. This lab adds finite attempts and a human handoff.
+- [The Last AI Built by Humans, v2](https://arxiv.org/pdf/2609.11873v2), §§2.2–3.3, and [Darwin Godel Machine, v3](https://arxiv.org/pdf/2505.22954v3) with its [pinned outer loop](https://github.com/jennyzzt/dgm/blob/a565fd2d1dca504ef5104a7cc0f3bdc4ab9b4fd2/DGM_outer.py): distinguish output refinement, candidate retention, and tested inheritance. This lab has not demonstrated persistent procedure improvement or implemented DGM's search.
 - [Dioxus Agent Guide](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/AGENTS.md): read only the structure needed for the task, then move to the actual implementation.
-- [Furiosa torch-fx-rs instructions](https://github.com/furiosa-ai/torch-fx-rs/blob/3024d6d157732e51b02ef67b808131bec4d652ef/AGENTS.md) and [Agent Skills](https://github.com/furiosa-ai/agent_skills/blob/d5fc482fdca0af78aada5d1e183b4aad18ffbfc7/AGENTS.md): preserve existing API semantics, make small changes, run targeted checks, and describe PRs from the final diff.
+- [Furiosa torch-fx-rs instructions](https://github.com/furiosa-ai/torch-fx-rs/blob/3024d6d157732e51b02ef67b808131bec4d652ef/AGENTS.md) and [Agent Skills](https://github.com/furiosa-ai/agent_skills/blob/d5fc482fdca0af78aada5d1e183b4aad18ffbfc7/AGENTS.md): small changes, preserved API contracts, targeted checks, and final-diff review.
 - [Furiosa Kernel Validation](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/docs/src/quick-start/kernel-validation.md): distinguish CPU value checks from target validation.
-- [Furiosa CI](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/.github/workflows/build.yml) and [Dioxus CI](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/.github/workflows/main.yml): connect language tools, targeted checks, and documentation checks to actual jobs. This lab adopts only checks needed for its scale and public code.
-- [GEODE operating principles](https://github.com/mangowhoiscloud/geode/blob/c221191bd9f90fd4a1df116f45371ec08797c2dd/GEODE.md): persistence within scope, evidence-based decisions, and bounded recovery that preserves failures. GEODE runtime features and authority tiers are not represented as implemented in this lab.
-- [Trajectory publication contract](https://github.com/mangowhoiscloud/geode-eval-artifacts/blob/d277607f3a179f191ad24b1497c0934beb9d2470/TRAJECTORIES.md): distinguish originals, derived summaries, and score receipts; preserve order, pairs, provenance, and incompleteness. This lab uses existing run records without adding a schema or storage engine.
-- [OpenAI Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering) and [Claude Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices): separate goals, constraints, examples, and reference context, and specify completion criteria. The source text was checked on 2026-09-16. Model-specific recommendations are not universal rules; instruction effectiveness requires separate evaluation.
+- [Furiosa CI](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/.github/workflows/build.yml) and [Dioxus CI](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/.github/workflows/main.yml): language-specific and documentation checks connected to actual jobs.
+- [GEODE operating principles](https://github.com/mangowhoiscloud/geode/blob/c221191bd9f90fd4a1df116f45371ec08797c2dd/GEODE.md) and [trajectory publication contract](https://github.com/mangowhoiscloud/geode-eval-artifacts/blob/d277607f3a179f191ad24b1497c0934beb9d2470/TRAJECTORIES.md): bounded recovery, preserved failures, and separation of originals from summaries. GEODE's runtime and a new storage system are not implemented here.
+- [OpenAI Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering) and [Claude Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices): separate goals, constraints, examples, and reference context. Instruction effectiveness still requires evaluation.
 
 Do not copy project-specific commands or mandates from external guides verbatim. This lab's work rules are in [AGENTS.md](AGENTS.md), its execution procedure in [program.md](program.md), and its verification obligations in the [quality contract](docs/quality.md).
