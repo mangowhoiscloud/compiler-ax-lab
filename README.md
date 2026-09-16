@@ -1,99 +1,103 @@
 # Compiler AX Lab
 
-코딩 에이전트의 초안을 **컴파일러 개발자가 검토할 수 있는 변경**으로 만드는 실험입니다. 코드 생성량보다 무엇을 고쳤고, 어떤 검사가 그 변경을 실제로 확인했는지를 다룹니다.
+An experiment in turning coding-agent drafts into **changes a compiler developer can review**. The focus is not how much code was generated, but what changed and which checks actually verified it.
 
-컴파일 성공만으로 출력의 의미가 보존되지는 않습니다. 값이 맞아도 이전 바이너리를 실행했을 수 있고, 실패한 검사가 의도한 결함이 아니라 환경 문제를 잡았을 수도 있습니다. 이 저장소는 변경 범위를 먼저 정하고, 독립 기대값·정상/오류 대조군·소스와 바이너리의 연결로 그 차이를 확인합니다.
+Successful compilation does not establish that output semantics were preserved. Correct values may come from a stale binary; a failed test may detect an environment problem rather than the intended fault. This lab fixes the change scope first, then uses independent expected values, normal/fault controls, and source-to-binary evidence to distinguish those cases.
 
 ```text
-문제·보존할 동작 → 원인 가설 → 한정된 변경 → 고정 검사
-                                             ↓
-                          소스·명령·실제 값·종료 상태 대조
-                                             ↓
-                                   사람 검토 → 별도 병합
+Problem and preserved behavior → Cause hypothesis → Bounded change → Fixed checks
+                                                                         ↓
+                                        Cross-check source, commands, values, and exit status
+                                                                         ↓
+                                                         Human review → Separate merge
 ```
 
-FuriosaAI와 무관한 개인 연구입니다. 공개 `furiosa-opt`의 Rust 예제를 사용하며 내부 production compiler나 NPU를 재현한 시스템은 아닙니다.
+This is independent research, unaffiliated with FuriosaAI. It uses Rust examples from the public `furiosa-opt` repository; it does not reproduce Furiosa's internal production compiler or NPU.
 
-## 공개된 시스템
+## Public system
 
-| 구성 | 역할 | 진입점 |
+| Component | Responsibility | Entrypoint |
 |---|---|---|
-| 작업 규율 | 요청 범위·컨벤션·Git 경로·공개 경계를 정합니다. | [AGENTS.md](AGENTS.md) |
-| 실행 스킬 | 별도 후보 사본에서 진단·수정·검사를 제한된 횟수로 수행합니다. | [run-bounded-change-loop](.agents/skills/run-bounded-change-loop/SKILL.md), [program.md](program.md) |
-| 로컬 실행기 | 계약과 검사기를 고정하고 시도 예약·원문·사본·결과를 재검증합니다. | [trial.py](scripts/trial.py), [회귀 검사](tests/test_trial.py) |
-| Rust 테스트 사례 | 세 커널의 수치 의미와 parser의 문법·AST·진단 위치를 검사합니다. | [double-buffering](docs/kernels/double-buffering.md), [mapping parser](docs/quality.md#mapping-parser) |
-| 검토·PR 스킬 | 현재 diff와 실제 검사 revision을 연결해 기존 PR을 갱신합니다. | [review-to-verified-pr](.agents/skills/review-to-verified-pr/SKILL.md), [병합 규약](docs/merge.md) |
+| Work rules | Define request scope, conventions, Git flow, and publication boundaries. | [AGENTS.md](AGENTS.md) |
+| Experiment supervision | Resume the authorized phase, validate raw evidence, preserve failures, and collect before advancing. | [Operator program](program.md#supervise-an-approved-experiment) |
+| Execution skill | Diagnose, change, and check a separate candidate copy within a finite attempt budget. | [run-bounded-change-loop](.agents/skills/run-bounded-change-loop/SKILL.md), [program.md](program.md) |
+| Local runner | Freeze the contract and checker; revalidate attempt reservations, raw evidence, copies, and results. | [trial.py](scripts/trial.py), [regression tests](tests/test_trial.py) |
+| Rust test cases | Check numerical semantics for three kernels and grammar, AST, and diagnostic locations for the parser. | [double-buffering](docs/kernels/double-buffering.md), [mapping parser](docs/quality.md#mapping-parser) |
+| Review and PR skill | Link the current diff to the actual checked revision and update the existing PR. | [review-to-verified-pr](.agents/skills/review-to-verified-pr/SKILL.md), [merge contract](docs/merge.md) |
 
-공개 실행기는 표준 라이브러리 기반 Python 데모입니다. Rust 사례는 호환 x86-64 환경에서 Cargo로 재현하는 테스트·patch이며, `trial.py --task furiosa`로 실행할 수 없습니다. A/B의 운영자 실행기·계정 기록·보호 입력·원문은 로컬에만 보존합니다.
+The public runner is a Python standard-library demo. The Rust cases are tests and patches reproduced through Cargo in a compatible x86-64 environment, not through `trial.py --task furiosa`. A/B operator runners, account records, protected inputs, and raw evidence remain local.
 
-## 빠르게 확인하기
+## Quick checks
 
-Git으로 clone한 저장소 루트에서 실행합니다. Git, Node.js 22 이상, Unix 계열 Python 3.9 이상이면 추가 패키지 없이 공개 시스템을 검사할 수 있습니다.
+Run from the root of a Git clone. Git, Node.js 22 or later, and Python 3.9 or later on a Unix-like system are sufficient to check the public system without extra packages.
 
 ```bash
 node scripts/check.mjs
 python3 -m unittest discover -s tests -v
 ```
 
-첫 명령은 공개 파일·민감정보·읽기 경로·PR/CI 규약을 검사합니다. 두 번째는 실행기의 정상·실패·중단 및 저장 증거 검증을 확인합니다. 둘 다 Rust나 NPU 검사는 아닙니다.
+The first command checks public files, sensitive information, reading routes, and PR/CI contracts. The second checks normal, failed, and stopped runner behavior and validation of stored evidence. Neither checks Rust or NPU correctness.
 
-변경을 제출할 때는 [언어별 품질 검사](docs/quality.md#언어별-정적-검사와-ci-분기)도 실행합니다. CI는 항상 공개/문서·workflow를 확인하고, 변경 경로에 따라 Python의 Ruff·mypy·회귀, JavaScript의 Biome, Rust의 포맷·독립 reference Clippy/테스트·patch 검사를 나눕니다. `lab-ci`는 선택된 job의 실패·취소·누락을 거절합니다. 검사 도구만 개발 의존성으로 추가되며 데모 실행에는 필요하지 않습니다.
+Before submitting a change, also run the [language-specific quality checks](docs/quality.md#language-specific-static-checks-and-ci-routing). CI always checks public files, documentation, and workflows. Changed paths select Python Ruff, mypy, and regression checks; JavaScript Biome checks; or Rust formatting, independent-reference Clippy/tests, and patch checks. `lab-ci` rejects failed, cancelled, or missing selected jobs. Only the check tools are development dependencies; the demo does not require them.
 
-실제 수정 데모는 [program.md](program.md)의 순서로 진행합니다. seed에는 의도적인 결함이 있으므로 사본만 수정합니다. 기본 예산은 baseline을 포함한 검사 2회, 호출당 10초입니다. `REVISE`에서만 수정하며 `READY_FOR_REVIEW`는 사람에게 넘길 상태이지 자동 승인이 아닙니다. 누락·시간 초과·한도 종료는 `STOP`으로 남습니다.
+Follow [program.md](program.md) for the change demo. The seed contains an intentional defect, so edit only a copy. The default budget is two checks including the baseline, with ten seconds per invocation. Edit only in `REVISE`; `READY_FOR_REVIEW` is a human handoff state, not automatic approval. Missing evidence, timeouts, and exhausted limits leave the run in `STOP`.
 
-## Rust 사례를 재현하려면
+## Reproducing the Rust cases
 
-기준은 `furiosa-opt` v0.8.1, commit `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`, `nightly-2026-05-01`입니다. SDK에 맞는 x86-64 Linux와 native dependency를 준비한 뒤, [품질 계약](docs/quality.md)에 따라 lock·도구·명령과 한도를 기록합니다. CI의 Rust job은 SDK native 환경을 설치하지 않고 독립 reference와 patch 적용 가능성까지만 검사합니다.
+The baseline is `furiosa-opt` v0.8.1, commit `9b9cf0fdc78df00cdc430eae725a5ad9084a735e`, with `nightly-2026-05-01`. Prepare SDK-compatible x86-64 Linux and native dependencies, then record the lockfile, tools, commands, and limits under the [quality contract](docs/quality.md). The Rust CI job does not install the SDK's native environment; it checks only the independent reference and patch applicability.
 
-- **Double-buffering:** [SDK 테스트](examples/furiosa-double-buffering/tests/double_buffering_tests.rs)와 [독립 scalar reference](examples/furiosa-double-buffering/tests/support/double_buffering_reference.rs)를 고정 checkout에 적용합니다. [입력·수치 계약과 명령](docs/kernels/double-buffering.md)에 따라 세 구현의 모든 출력 좌표를 대조합니다.
-- **Mapping parser:** [테스트 patch](examples/furiosa-mapping-parser/tests.patch)를 적용해 두 parser 진입점의 AST·오류 문구·byte range를 함께 확인합니다. [적용 범위와 명령](docs/quality.md#mapping-parser)을 따릅니다.
-- 공개 오류 patch는 별도 사본에서 검사기의 판별력을 확인하는 용도입니다. upstream에서 발견한 버그나 A/B의 보호 평가 정답으로 취급하지 않습니다.
+- **Double-buffering:** Apply the [SDK tests](examples/furiosa-double-buffering/tests/double_buffering_tests.rs) and [independent scalar reference](examples/furiosa-double-buffering/tests/support/double_buffering_reference.rs) to the pinned checkout. Compare every output coordinate across the three implementations under the [input/numerical contract and commands](docs/kernels/double-buffering.md).
+- **Mapping parser:** Apply the [test patch](examples/furiosa-mapping-parser/tests.patch) to check ASTs, diagnostic text, and byte ranges through both parser entrypoints. Follow the [scope and commands](docs/quality.md#mapping-parser).
+- Public fault patches test the checker's ability to distinguish faults in a separate copy. They are neither bugs discovered upstream nor answers for the protected A/B evaluation.
 
-## 검증 상태
+## Verification status
 
-다음은 서로 다른 실행의 근거입니다. 테스트 수, 원소 비교 수, A/B 평가 단위를 합산하지 않습니다.
+The following evidence comes from distinct executions. Test counts, element comparisons, and A/B evaluation units are not interchangeable and are not summed.
 
-| 실행 | 확인한 결과 | 해석 범위 |
+| Execution | Verified result | Scope |
 |---|---|---|
-| AWS 무변경 CPU smoke | 지정 assertion 1개 통과, 파일 94개 수거·대조와 생성 자원 회수 | native x86 환경 준비; 새 후보의 성과가 아님 |
-| 공개 double-buffering 보강 | SDK 3개·18개 입력 실행·46,080개 값 일치, helper 2개 통과. 공개 오류 사본은 컴파일 후 지정 수치 assertion 실패 | 고정 shape·정확히 표현 가능한 bf16 입력의 CPU 검사 |
-| 공개 mapping parser 보강 | 기존 6개에서 12개 검사로 확장해 통과. 공개 오류 사본의 잘못된 수용을 지정 검사에서 검출 | 두 진입점의 AST·진단. 오류 사본은 mapping assertion에서 먼저 실패 |
-| 두 변경의 CPU workspace 통합 | 일반 검사 720개·doctest 55개·전체 대상 release Clippy 통과 | 기본 feature. ignored 17개 제외; doctest 55개 중 44개는 `compile_fail` |
-| 로컬 실행기 | 회귀 검사 16개 통과 | Python 데모·증거 처리; compiler 정확성과 별개 |
+| AWS unchanged CPU smoke | One designated assertion passed; 94 files collected and checked; created resources reclaimed | Native x86 environment readiness, not a new candidate's performance |
+| Public double-buffering test improvement | Three SDK tests, 18 input executions, and 46,080 matching values; two helper tests passed. The public fault copy compiled, then failed the designated numerical assertion | CPU checks for fixed shapes and exactly representable bf16 inputs |
+| Public mapping-parser test improvement | Expanded from six to twelve passing checks. The designated check detected the public fault copy's incorrect acceptance | ASTs and diagnostics through two entrypoints. The fault copy failed at the mapping assertion first |
+| CPU workspace integration of both changes | 720 regular tests, 55 doctests, and all-target release Clippy passed | Default features. Excludes 17 ignored tests; 44 of the 55 doctests are `compile_fail` |
+| Local runner | Sixteen regression tests passed | Python demo and evidence handling, separate from compiler correctness |
 
-로컬 CPU 실험은 Ubuntu 24.04 amd64/Rosetta, 2 CPU·6 GiB, Cargo jobs=1 환경입니다. 원격 무변경 smoke는 별도 AWS x86 실행입니다. NPU timing·overlap·성능, 비기본 feature 전체, 사람의 채택은 확인 범위에 포함하지 않습니다.
+Local CPU experiments use Ubuntu 24.04 amd64/Rosetta, 2 CPUs, 6 GiB, and Cargo jobs=1. The remote unchanged smoke is a separate AWS x86 run. Verified scope excludes NPU timing, overlap and performance, full non-default-feature coverage, and human acceptance.
 
-### 진행 중인 A/B 파일럿
+### A/B pilot in progress
 
-**기준 시각: 2026-09-15 17:30 KST.** 같은 상세 과제만 받은 A와, 같은 과제에 조사·진단·변경·검증 절차를 추가한 B를 비교합니다. 한 과제·한 쌍이며 순서는 B 다음 A로 고정했습니다.
+**As of 2026-09-16 19:14 KST.** The pilot compares A, given the detailed common task, with B, given the same task plus a research, diagnosis, change, and verification procedure. It uses one task and one pair, in a fixed B-then-A order.
 
-| 항목 | A: 공통 과제 | B: 절차 안내 추가 |
+| Item | A: common task | B: additional procedure |
 |---|---|---|
-| 생성 | 초안 완료 | 초안 완료 |
-| 공개 검사 | 디스크 하한·사용자 중단 기록을 보존하고 같은 소스로 재개. 원래 종료 시각 유지; 수정 기회 1회 미사용 | 수정 1회 후 fmt·컴파일·SDK 3개와 helper 1개·Clippy 통과 |
-| 소스 동결 | 대기 | 완료 |
-| 최종 정상/오류 비교 | 4개 단위 미실행 | 4개 단위 미실행 |
-| 사람 작업시간·채택 | PENDING | PENDING |
+| Generation | Draft complete | Draft complete |
+| Public checks | After one revision, formatting, compilation, three SDK tests, one helper test, and Clippy passed; earlier interruption and recovery records preserved | After one revision, formatting, compilation, three SDK tests, one helper test, and Clippy passed |
+| Source freeze | Complete; source and review message frozen | Complete; source and review message frozen |
+| Private implementation build | Not started | In progress; no final classification yet |
+| Final normal/fault comparison | Four units not run | Four units not run |
+| Human work time and acceptance | PENDING | PENDING |
 
-두 후보가 모두 동결된 뒤 최종 8개 단위를 검사하며, 보호 결과는 후보 수정에 돌려주지 않습니다. 생성 전 고정한 예산을 유지하고 중단·재개는 별도 기록합니다. 사용자 승인으로 구독 계정이 바뀌었고 실행 중 호스트 캐시 정리도 있었으므로, 단일 요인을 엄밀히 통제한 생산성 실험으로 해석하지 않습니다. 사람 작업시간은 모델의 실행 시간으로 대신하지 않습니다.
+The final eight units run only after both candidates are frozen; protected results are never returned for candidate repair. Budgets fixed before generation remain unchanged, and interruptions and resumptions are recorded separately. The subscription account changed with user approval, and host caches were cleaned during execution, so this is not a strictly single-factor-controlled productivity experiment. Model runtime does not substitute for human work time.
 
-## 변경과 공개
+## Changes and publication
 
-Git 경로는 feature branch → `dev` → `main`입니다. 현재 `codex/executable-loop-skill`이 feature branch 역할을 합니다. feature 변경은 `dev` PR에서 squash하고, 검증한 `dev`는 별도 PR의 merge commit으로 `main`에 올려 다음 승격에서도 공통 조상을 보존합니다. 두 단계 모두 현재 head/base의 필수 CI와 명시적 병합 요청을 확인합니다. [병합 규약](docs/merge.md), [PR 템플릿](.github/pull_request_template.md)
+Git flow is feature branch → `dev` → `main`. Squash feature changes through a PR into `dev`; promote verified `dev` through a separate merge-commit PR into `main`, preserving shared ancestry for future promotions. Both stages require current head/base CI and an explicit merge request. See the [merge contract](docs/merge.md) and [PR template](.github/pull_request_template.md).
 
-Draft는 구현·필수 검사가 남았을 때만 사용합니다. 검토 가능한 변경은 Ready for review로 전환하며, Draft 자체를 검토나 병합 승인 대신 사용하지 않습니다. 브랜치 직접 push로 병합을 우회하거나 history rewrite를 하지 않습니다. 실행 결과에 대한 사람 채택과 저장소 변경 병합은 구분합니다.
+Use Draft only while implementation or required checks remain. Mark reviewable changes Ready for review; Draft status is not a substitute for review or merge authorization. Do not bypass merging with direct branch pushes or rewrite history. Human acceptance of an experiment result is separate from merging a repository change.
 
-공개 트리에는 실행 코드·테스트·스킬·필수 계약만 둡니다. 조사 원문·설계 이력·발표 자료·실험 로그·보호 평가·인증정보는 Git에서 제외한 로컬 자료입니다. 공개 스냅샷은 실시간 상태판이 아니며 다음 검사 완료 시 갱신합니다. 이전 공개 자료는 Git 이력에 남아 있습니다.
+The public tree contains executable code, tests, skills, and necessary contracts only. Research originals, design history, presentations, experiment logs, protected evaluations, and credentials are Git-ignored local material. The public snapshot is not a live dashboard; it is updated after the next completed check. Earlier public material remains in Git history.
 
-## 설계에 참고한 원문
+## Design references
 
-- [autoresearch의 작업 절차](https://github.com/karpathy/autoresearch/blob/228791fb499afffb54b46200aca536f79142f117/program.md): 수정 파일·고정 평가·실행 기록을 분리하는 구성. 이 lab에서는 무한 탐색 대신 유한 시도와 사람 검토로 종료합니다.
-- [Dioxus Agent Guide](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/AGENTS.md): 작업에 필요한 구조만 읽고 실제 구현으로 이동하는 진입 방식.
-- [Furiosa torch-fx-rs 지침](https://github.com/furiosa-ai/torch-fx-rs/blob/3024d6d157732e51b02ef67b808131bec4d652ef/AGENTS.md), [Agent Skills](https://github.com/furiosa-ai/agent_skills/blob/d5fc482fdca0af78aada5d1e183b4aad18ffbfc7/AGENTS.md): 기존 API 의미·작은 변경·표적 검사와 최종 diff 기반 PR 설명.
-- [Furiosa Kernel Validation](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/docs/src/quick-start/kernel-validation.md): CPU 값 검사와 타깃 검증의 구분.
-- [Furiosa CI](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/.github/workflows/build.yml), [Dioxus CI](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/.github/workflows/main.yml): 언어 도구·표적 검사·문서 검사를 실제 job에 연결하는 구조. 이 lab의 규모와 공개 코드에 필요한 검사만 적용합니다.
-- [GEODE 운영 원칙](https://github.com/mangowhoiscloud/geode/blob/c221191bd9f90fd4a1df116f45371ec08797c2dd/GEODE.md): 허용 범위 안의 지속성, 확인한 근거에 따른 판단, 실패를 보존한 제한적 복구. GEODE runtime 기능이나 권한 tier를 이 lab에 구현된 것으로 옮기지 않습니다.
-- [Trajectory publication contract](https://github.com/mangowhoiscloud/geode-eval-artifacts/blob/d277607f3a179f191ad24b1497c0934beb9d2470/TRAJECTORIES.md): 원본·파생 요약·점수 receipt의 구분, 순서·짝·출처·불완전성 보존. 기존 run 기록을 사용하며 새 schema나 저장 엔진을 추가하지 않습니다.
-- [OpenAI Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering), [Claude Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices): 목적·제약·예시·참고 문맥을 분리하고 완료 조건을 명시하는 방식. 2026-09-16 본문을 확인했으며 모델별 권고를 보편 규칙으로 적용하지 않습니다. 지침 효과는 별도 평가 대상입니다.
+[The Last AI Built by Humans: Toward Genuine Recursive Self-Improvement, v2](https://arxiv.org/pdf/2609.11873v2), §§2.2–3.3, distinguishes in-task output refinement (B0) from persistent improvement execution (L1) and strategy autonomy (L2). This is the authors' survey taxonomy, not a certification. Our frozen one-task A/B tests candidate outputs, not a successor agent that inherits an improved procedure: it is B0-level evidence, despite substantial execution automation. Committing instructions or merging code alone does not demonstrate L1/L2 self-improvement. The actionable extension is explicit inheritance evidence: a later independent task must load a reviewed policy revision and test transfer, regressions, and cost under fixed criteria. The [operator program](program.md#supervise-an-approved-experiment) records that boundary; this pilot does not perform that later experiment. No model-weight training or autonomous evaluator changes are added.
 
-외부 지침의 프로젝트별 명령·강제 조건을 그대로 복사하지 않습니다. 이 lab의 작업 규칙은 [AGENTS.md](AGENTS.md), 실행 순서는 [program.md](program.md), 판정 의무는 [품질 계약](docs/quality.md)에 있습니다.
+- [autoresearch procedure](https://github.com/karpathy/autoresearch/blob/228791fb499afffb54b46200aca536f79142f117/program.md): separate editable files, fixed evaluation, and execution records. This lab ends with finite attempts and human review rather than indefinite search.
+- [Dioxus Agent Guide](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/AGENTS.md): read only the structure needed for the task, then move to the actual implementation.
+- [Furiosa torch-fx-rs instructions](https://github.com/furiosa-ai/torch-fx-rs/blob/3024d6d157732e51b02ef67b808131bec4d652ef/AGENTS.md) and [Agent Skills](https://github.com/furiosa-ai/agent_skills/blob/d5fc482fdca0af78aada5d1e183b4aad18ffbfc7/AGENTS.md): preserve existing API semantics, make small changes, run targeted checks, and describe PRs from the final diff.
+- [Furiosa Kernel Validation](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/docs/src/quick-start/kernel-validation.md): distinguish CPU value checks from target validation.
+- [Furiosa CI](https://github.com/furiosa-ai/furiosa-opt/blob/9b9cf0fdc78df00cdc430eae725a5ad9084a735e/.github/workflows/build.yml) and [Dioxus CI](https://github.com/DioxusLabs/dioxus/blob/ada3b67c73c1c5484dd2e8408cb21c470b200423/.github/workflows/main.yml): connect language tools, targeted checks, and documentation checks to actual jobs. This lab adopts only checks needed for its scale and public code.
+- [GEODE operating principles](https://github.com/mangowhoiscloud/geode/blob/c221191bd9f90fd4a1df116f45371ec08797c2dd/GEODE.md): persistence within scope, evidence-based decisions, and bounded recovery that preserves failures. GEODE runtime features and authority tiers are not represented as implemented in this lab.
+- [Trajectory publication contract](https://github.com/mangowhoiscloud/geode-eval-artifacts/blob/d277607f3a179f191ad24b1497c0934beb9d2470/TRAJECTORIES.md): distinguish originals, derived summaries, and score receipts; preserve order, pairs, provenance, and incompleteness. This lab uses existing run records without adding a schema or storage engine.
+- [OpenAI Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering) and [Claude Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices): separate goals, constraints, examples, and reference context, and specify completion criteria. The source text was checked on 2026-09-16. Model-specific recommendations are not universal rules; instruction effectiveness requires separate evaluation.
+
+Do not copy project-specific commands or mandates from external guides verbatim. This lab's work rules are in [AGENTS.md](AGENTS.md), its execution procedure in [program.md](program.md), and its verification obligations in the [quality contract](docs/quality.md).
