@@ -6,7 +6,7 @@ The public repository contains a Python standard-library runner, Rust test examp
 
 ## Report
 
-Read the [Compiler AX Retrospective (PDF)](https://mangowhoiscloud.github.io/compiler-ax-lab/report.pdf), or use the [repository copy](report.pdf). The 13-page Korean report connects the completed CPU test-improvement pilot to a proposed expert-reviewed compiler-development workflow. Measured results, owner selection, and future adoption are distinguished throughout; this retrospective is not the original submitted assignment.
+Read the [Compiler AX Retrospective (PDF)](https://mangowhoiscloud.github.io/compiler-ax-lab/report.pdf), or use the [repository copy](report.pdf). The 14-page Korean report connects the completed CPU test-improvement pilot to a proposed expert-reviewed compiler-development workflow. Measured results, owner selection, and future adoption are distinguished throughout; this retrospective is not the original submitted assignment.
 
 Only the reviewed PDF is published to GitHub Pages. Its source documents, protected evaluations, and raw records remain local. The [publication checks](docs/quality.md#report-publication) pin the reviewed bytes; deployment follows successful `main` CI.
 
