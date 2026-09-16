@@ -34,6 +34,12 @@ The required check remains `lab-ci`. Every selected job must return `success`; `
 
 When adding a tool or rule, update the affected language's code, configuration, CI, and this table together. CI does not measure instruction compliance or model problem-solving performance. Full SDK checks follow the separate commands and environment contract below.
 
+### Report publication
+
+The owner-approved [report.pdf](../report.pdf) is the only published binary. Before replacing it, inspect extracted text, link annotations, metadata, and rendered pages for private information, unsupported claims, and layout defects. Update its approved SHA-256 in `scripts/check.mjs` only after that review. The checker rejects different bytes; it does not interpret PDF content or establish factual correctness. Sources, protected inputs, and raw evidence remain local.
+
+The existing quality workflow publishes only `report.pdf` after `lab-ci` succeeds on a push to `main`. PR and `dev` runs cannot deploy; Pages write permissions are confined to the deployment job and its `github-pages` environment. Changes still follow feature → dev → main. After deployment, retrieve the public URL and compare its SHA-256 with the checked repository copy before reporting completion.
+
 ### Input and numerical contracts
 
 Freeze shape, dtype, formula, input domain, tolerances, and an independent oracle before checking. The [double-buffering contract](kernels/double-buffering.md) defines numerical obligations for finite integer inputs; the [parser contract below](#mapping-parser) defines AST and error-location expectations. Do not fill unknown values or missing evidence with success, or treat CPU results as NPU evidence.

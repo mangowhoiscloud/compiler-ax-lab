@@ -1,6 +1,7 @@
 // Document/publication checks only. Not a compiler or agent-evaluation oracle.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +10,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const allowed = new Set([
   '.gitignore',
   'README.md',
+  'report.pdf',
   'AGENTS.md',
   '.github/CODEOWNERS',
   '.github/pull_request_template.md',
@@ -37,6 +39,13 @@ const allowed = new Set([
 ]);
 const sensitive =
   /(?:\/Users\/|\/home\/)[\w.-]+\/|file:\/\/|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{24,}|-----BEGIN [A-Z ]*PRIVATE KEY-----/;
+
+// Pins the owner-approved public copy, not a semantic or privacy proof.
+const reportSha256 = '5473980503004ff58a037b7ba7d6356af2bb6f591c91169216352bc8c6d063df';
+function requireReportPdf(bytes) {
+  assert.equal(bytes.subarray(0, 5).toString('ascii'), '%PDF-', 'Report is not a PDF');
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), reportSha256, 'Report differs from the reviewed PDF');
+}
 
 // This repository uses inline/reference links and ATX headings. Ignore fenced
 // examples when discovering links/headings, but still scan all bytes for secrets.
@@ -129,6 +138,8 @@ function requireResults(plan, results) {
 assert.ok(sensitive.test(`/${['Users', 'example', 'private'].join('/')}`), 'Path check self-test');
 assert.ok(sensitive.test(`sk-${'x'.repeat(24)}`), 'Secret check self-test');
 assert.ok(!allowed.has('.local/private.md'), 'Private scope self-test');
+assert.throws(() => requireReportPdf(Buffer.from('not a PDF')), /not a PDF/);
+assert.throws(() => requireReportPdf(Buffer.from('%PDF-unreviewed')), /differs from the reviewed PDF/);
 checkIndexLinks('[Page](01.md#entry)', ['01.md']);
 assert.throws(() => checkIndexLinks('[Page](01.md)', ['02.md']), /missing from index/);
 assert.equal(publicTarget('AGENTS.md', 'docs/quality.md#mapping-parser').name, 'docs/quality.md');
@@ -196,7 +207,7 @@ if (process.argv[2] === '--self-test') {
   console.log(
     JSON.stringify({
       status: 'PASS',
-      scope: 'public-path, secret, link, anchor and CI selection/gate regressions; no repository scan',
+      scope: 'public-path, PDF rejection, secret, link, anchor and CI selection/gate regressions; no repository scan',
     }),
   );
   process.exit(0);
@@ -213,6 +224,10 @@ for (const file of files) {
   assert.ok(existsSync(full), `Missing public file: ${file}`);
   assert.ok(lstatSync(full).isFile() && !lstatSync(full).isSymbolicLink(), `Not a regular public file: ${file}`);
   assert.equal(realpathSync(full), full, `Symlink ancestor in public file: ${file}`);
+  if (file === 'report.pdf') {
+    requireReportPdf(readFileSync(full));
+    continue;
+  }
   const text = readFileSync(full, 'utf8');
   texts.set(file, text);
   assert.ok(!sensitive.test(text), `Sensitive-looking text: ${file}`);
@@ -283,6 +298,11 @@ for (const fragment of [
   'clippy-driver',
   'git apply --check',
   'actionlint@v1.7.12',
+  'publish-report:',
+  'needs: [lab-ci]',
+  "if: github.event_name == 'push' && github.ref == 'refs/heads/main'",
+  'cp report.pdf "$RUNNER_TEMP/report-site/report.pdf"',
+  `path: \${{ runner.temp }}/report-site`,
 ])
   assert.ok(workflow.includes(fragment), fragment);
 assert.ok(!workflow.includes('pull_request_target'), 'Do not run PR code with a privileged event');
