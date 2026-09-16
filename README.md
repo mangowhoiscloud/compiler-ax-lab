@@ -64,20 +64,25 @@ The following evidence comes from distinct executions. Test counts, element comp
 
 Local CPU experiments use Ubuntu 24.04 amd64/Rosetta, 2 CPUs, 6 GiB, and Cargo jobs=1. The remote unchanged smoke is a separate AWS x86 run. Verified scope excludes NPU timing, overlap and performance, full non-default-feature coverage, and human acceptance.
 
-### A/B pilot in progress
+### A/B pilot: execution complete, human review pending
 
-**As of 2026-09-16 19:14 KST.** The pilot compares A, given the detailed common task, with B, given the same task plus a research, diagnosis, change, and verification procedure. It uses one task and one pair, in a fixed B-then-A order.
+**Final execution completed 2026-09-16 19:39 KST.** The pilot compares A, given the detailed common task, with B, given the same task plus a research, diagnosis, change, and verification procedure. It uses one task and one pair, with candidate generation in a fixed B-then-A order.
 
 | Item | A: common task | B: additional procedure |
 |---|---|---|
 | Generation | Draft complete | Draft complete |
 | Public checks | After one revision, formatting, compilation, three SDK tests, one helper test, and Clippy passed; earlier interruption and recovery records preserved | After one revision, formatting, compilation, three SDK tests, one helper test, and Clippy passed |
 | Source freeze | Complete; source and review message frozen | Complete; source and review message frozen |
-| Private implementation build | Not started | In progress; no final classification yet |
-| Final normal/fault comparison | Four units not run | Four units not run |
+| Private implementation build | Compiled; source and binary linked to the frozen candidate | Compiled; source and binary linked to the frozen candidate |
+| Final normal/fault comparison | Three normal controls passed (TN); one qualified fault detected (TP) | Three normal controls passed (TN); one qualified fault detected (TP) |
+| Invalid or unexecuted final units | 0 of 4 | 0 of 4 |
 | Human work time and acceptance | PENDING | PENDING |
 
-The final eight units run only after both candidates are frozen; protected results are never returned for candidate repair. Budgets fixed before generation remain unchanged, and interruptions and resumptions are recorded separately. The subscription account changed with user approval, and host caches were cleaned during execution, so this is not a strictly single-factor-controlled productivity experiment. Model runtime does not substitute for human work time.
+All eight final units ran once after both source trees and review messages were frozen. Each executed exactly one selected SDK test, with none ignored. Review traced the two expected failures to the intended numerical assertions, not compilation, timeout, or unrelated panics. Source snapshots, binary identities, complete output vectors, test counts, and runtime exits agreed; all 825 final artifacts were rehashed. Raw observations remain separate from operator classifications and human acceptance. Owned staging/runtime containers and temporary images were removed after collection.
+
+**The final control result is a tie: no observed false positives or false negatives in this small control set.** A exercised six fixtures per normal implementation and B four; these are different coverage choices, not extra independent evaluation units. Both used integer scalar references and exactly representable bf16 fixtures. This establishes feasibility of generating and checking bounded Rust test changes, not a measured benefit from B's extra procedure, an upstream defect discovery, or NPU performance.
+
+Protected results were not returned for candidate repair, and no model calls were added during final evaluation. Budgets fixed before generation remained unchanged; interruptions and resumptions are recorded separately. The subscription account changed with user approval, and host caches were cleaned during execution, so this is not a strictly single-factor-controlled productivity experiment. Model runtime does not substitute for human work time. Broader 1/2-slot calibration and independent-task transfer remain outside this completed pilot.
 
 ## Changes and publication
 
