@@ -63,9 +63,9 @@ The following evidence comes from distinct executions. Test counts, element comp
 | CPU workspace integration of both changes | 720 regular tests, 55 doctests, and all-target release Clippy passed | Default features. Excludes 17 ignored tests; 44 of the 55 doctests are `compile_fail` |
 | Local runner | Sixteen regression tests passed | Python demo and evidence handling, separate from compiler correctness |
 
-Local CPU experiments use Ubuntu 24.04 amd64/Rosetta, 2 CPUs, 6 GiB, and Cargo jobs=1. The remote unchanged smoke is a separate AWS x86 run. Verified scope excludes NPU timing, overlap and performance, full non-default-feature coverage, and human acceptance.
+Local CPU experiments use Ubuntu 24.04 amd64/Rosetta, 2 CPUs, 6 GiB, and Cargo jobs=1. The remote unchanged smoke is a separate AWS x86 run. Verified scope excludes NPU timing, overlap and performance, and full non-default-feature coverage. Execution success does not itself grant human acceptance.
 
-### A/B pilot: execution complete, human review pending
+### A/B pilot: execution complete, frozen B adopted
 
 **Final execution completed 2026-09-16 19:39 KST.** The pilot compares A, given the detailed common task, with B, given the same task plus a research, diagnosis, change, and verification procedure. It uses one task and one pair, with candidate generation in a fixed B-then-A order.
 
@@ -77,11 +77,14 @@ Local CPU experiments use Ubuntu 24.04 amd64/Rosetta, 2 CPUs, 6 GiB, and Cargo j
 | Private implementation build | Compiled; source and binary linked to the frozen candidate | Compiled; source and binary linked to the frozen candidate |
 | Final normal/fault comparison | Three normal controls passed (TN); one qualified fault detected (TP) | Three normal controls passed (TN); one qualified fault detected (TP) |
 | Invalid or unexecuted final units | 0 of 4 | 0 of 4 |
-| Human work time and acceptance | PENDING | PENDING |
+| Human decision, 2026-09-16 | Not selected; retained, not rejected as incorrect | User adopted the frozen test change for the fixed-shape CPU scope after AI-assisted review |
+| Human active work time | Not measured | Not measured |
 
 All eight final units ran once after both source trees and review messages were frozen. Each executed exactly one selected SDK test, with none ignored. Review traced the two expected failures to the intended numerical assertions, not compilation, timeout, or unrelated panics. Source snapshots, binary identities, complete output vectors, test counts, and runtime exits agreed; all 825 final artifacts were rehashed. Raw observations remain separate from operator classifications and human acceptance. Owned staging/runtime containers and temporary images were removed after collection.
 
 **The final control result is a tie: no observed false positives or false negatives in this small control set.** A exercised six fixtures per normal implementation and B four; these are different coverage choices, not extra independent evaluation units. Both used integer scalar references and exactly representable bf16 fixtures. This establishes feasibility of generating and checking bounded Rust test changes, not a measured benefit from B's extra procedure, an upstream defect discovery, or NPU performance.
+
+**Why select B despite the tie?** [Source review](https://github.com/mangowhoiscloud/compiler-ax-lab/pull/11#pullrequestreview-5223709126) found that B's two identity-digit fixtures jointly distinguish all 2,560 output coordinates under a fixed permutation, while A's joint fixture signatures distinguish 2,332. B also checks the fixture/reference integer bounds explicitly. This coverage argument, not an extra scored fault run, motivated the user's limited adoption. The technical review used OpenAI Codex (`gpt-6-astra`, reasoning effort `ultra`); candidate generation requested the same model with effort `high`. It is not a personal human Rust audit or Furiosa approval. Frozen originals and results remain unchanged, and the published Rust example remains the earlier separately measured reference rather than B.
 
 Protected results were not returned for candidate repair, and no model calls were added during final evaluation. Budgets fixed before generation remained unchanged; interruptions and resumptions are recorded separately. The subscription account changed with user approval, and host caches were cleaned during execution, so this is not a strictly single-factor-controlled productivity experiment. Model runtime does not substitute for human work time. Broader 1/2-slot calibration and independent-task transfer remain outside this completed pilot.
 
@@ -91,7 +94,7 @@ The public parser replay rebuilt the pinned source and both public patches witho
 
 A new synthetic developer-handoff task addressed two observed operator errors: omitting completed checks and misreporting a deadline. Both arms received the same facts, output contract and correctness rules; only B received an additional receipt-first/as-of procedure. One fresh generation per arm produced byte-identical answers. Both outputs were frozen before grading, and both exactly matched the fixed answer: stale/future receipts excluded, zero-test verification marked invalid, 120 seconds remaining, human acceptance pending. Input/capture integrity held. Preparation errors, feature warnings and unsuccessful tool commands were retained. **No benefit from the extra procedure was observed in this one pair.** This was status reconstruction, not a compiler repair, human-productivity measurement or accepted-policy transfer.
 
-Human adoption remains pending. Nebius provisioning and Furiosa NPU/device work are excluded from this continuation; no new execution engine, database or cloud service was added. These follow-ups have separate run identities and do not enlarge or alter the frozen Rust A/B population.
+The separate proposed procedure has not been adopted as a proven improvement; selecting the frozen Rust B test change does not establish policy transfer. Nebius provisioning and Furiosa NPU/device work are excluded from this continuation; no new execution engine, database or cloud service was added. These follow-ups have separate run identities and do not enlarge or alter the frozen Rust A/B population.
 
 ## Changes and publication
 
