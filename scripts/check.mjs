@@ -257,11 +257,11 @@ for (const field of [
   'checkout SHA',
   'NOT_RUN',
   'post-merge',
-  '사람 검토',
-  '관련 리뷰 요구',
-  '환경 확인 근거',
-  '실패 후 남은 상태',
-  '기대 거절과 도구 실패',
+  'Human review',
+  'Review requirement',
+  'Environment evidence',
+  'State after failure',
+  'expected rejection from tool failure',
 ])
   assert.ok(pr.includes(field), field);
 const workflow = readFileSync(resolve(root, '.github/workflows/quality.yml'), 'utf8');
