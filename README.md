@@ -4,6 +4,12 @@ Compiler AX Lab explores how to turn coding-agent drafts into reviewable softwar
 
 The public repository contains a Python standard-library runner, Rust test examples for the public `furiosa-opt` SDK, and the contracts needed to reproduce and review them. It is independent research, unaffiliated with FuriosaAI; it does not reproduce Furiosa's internal production compiler or NPU.
 
+## Report
+
+Read the [Compiler AX Retrospective (PDF)](https://mangowhoiscloud.github.io/compiler-ax-lab/report.pdf), or use the [repository copy](report.pdf). The 13-page Korean report connects the completed CPU test-improvement pilot to a proposed expert-reviewed compiler-development workflow. Measured results, owner selection, and future adoption are distinguished throughout; this retrospective is not the original submitted assignment.
+
+Only the reviewed PDF is published to GitHub Pages. Its source documents, protected evaluations, and raw records remain local. The [publication checks](docs/quality.md#report-publication) pin the reviewed bytes; deployment follows successful `main` CI.
+
 ## How it works
 
 1. **Bound the task.** Fix the editable files, behavior to preserve, reference values, checker, and execution budget before modifying a candidate.
@@ -90,7 +96,7 @@ Use feature branch → `dev` → `main`: squash feature PRs into `dev`, then pro
 
 Use Draft while implementation or required checks remain; mark a checked diff Ready for review. The required `lab-ci` gate rejects failed, cancelled, missing, or unexpectedly skipped selected jobs. Do not push directly to shared branches or rewrite history. Human acceptance of an experiment result remains separate from a merge.
 
-Research originals, design history, presentations, protected evaluations, raw logs, and credentials remain Git-ignored local material. The public tree contains executable examples and their necessary contracts, not a live experiment dashboard. Earlier published material remains in Git history.
+Research originals, design history, presentation sources, protected evaluations, raw logs, and credentials remain Git-ignored local material. The public tree contains executable examples, their necessary contracts, and the explicitly approved final report PDF, not a live experiment dashboard. Earlier published material remains in Git history.
 
 ## Design references
 

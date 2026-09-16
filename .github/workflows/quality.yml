@@ -133,3 +133,34 @@ jobs:
           CI_RESULTS: >-
             {"system":"${{ needs.lab-system.result }}","python":"${{ needs.lab-python.result }}","javascript":"${{ needs.lab-javascript.result }}","rust":"${{ needs.lab-rust.result }}"}
         run: node scripts/check.mjs --ci-gate
+  publish-report:
+    needs: [lab-ci]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}report.pdf
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Stage only the reviewed PDF
+        run: |
+          mkdir "$RUNNER_TEMP/report-site"
+          cp report.pdf "$RUNNER_TEMP/report-site/report.pdf"
+          sha256sum "$RUNNER_TEMP/report-site/report.pdf"
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/report-site
+      - name: Deploy report
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
