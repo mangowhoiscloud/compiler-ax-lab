@@ -1,0 +1,12 @@
+{
+  "arm": "A",
+  "unit": 3,
+  "implementation": "normal",
+  "test": "test_double_buffering_unrolled",
+  "observation": "PASS",
+  "classification": "REQUIRES_REVIEW",
+  "reason": "Raw execution observation only; reviewer must establish assertion coverage and intended numerical failure, not infer TP from panic text.",
+  "binarySha256": "4c716de4da29cb4339f9d56baacca0578604871092770d20de0b98d96a397a9a",
+  "buildLocation": "public-A-1",
+  "executionReceipt": "044-execute"
+}

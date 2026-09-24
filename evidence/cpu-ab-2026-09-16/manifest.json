@@ -1,0 +1,816 @@
+{
+  "schemaVersion": 1,
+  "kind": "public-archive-manifest",
+  "originalRunRoot": "ab-pilot-20260915-yETyK8H5",
+  "files": [
+    {
+      "path": "A/tests/double_buffering_tests.rs",
+      "kind": "verbatim-original",
+      "source": "A-frozen/source/furiosa-opt-examples/tests/double_buffering_tests.rs",
+      "sha256": "482a67ba9c3583b22afef5ea223cde2e7eb9fd2d7d10cc658f775892057279c4",
+      "bytes": 4851,
+      "redactions": []
+    },
+    {
+      "path": "A/tests/support/double_buffering_reference.rs",
+      "kind": "verbatim-original",
+      "source": "A-frozen/source/furiosa-opt-examples/tests/support/double_buffering_reference.rs",
+      "sha256": "198a80a4aecc619fcde529eaf7fa97be9d1c53088e90098be88fe1a683b9f912",
+      "bytes": 3837,
+      "redactions": []
+    },
+    {
+      "path": "B/tests/double_buffering_tests.rs",
+      "kind": "verbatim-original",
+      "source": "B-frozen/source/furiosa-opt-examples/tests/double_buffering_tests.rs",
+      "sha256": "9f870ae2f722b4e0c1e7ffff9224127840d41f59581892443dd94d6aec528038",
+      "bytes": 4044,
+      "redactions": []
+    },
+    {
+      "path": "B/tests/support/double_buffering_reference.rs",
+      "kind": "verbatim-original",
+      "source": "B-frozen/source/furiosa-opt-examples/tests/support/double_buffering_reference.rs",
+      "sha256": "276f87950e8973c917a187cc9f514d2f4061adf4c38af783193d8a426d1cce58",
+      "bytes": 4415,
+      "redactions": []
+    },
+    {
+      "path": "common-task.md",
+      "kind": "verbatim-original",
+      "source": "common-task.md",
+      "sha256": "ee0be0a30e38ca87b793857a4a7c9f2d6e6075402ee1a08e828c2d30efddf362",
+      "bytes": 4616,
+      "redactions": []
+    },
+    {
+      "path": "procedure-b.md",
+      "kind": "verbatim-original",
+      "source": "procedure-b.md",
+      "sha256": "55dec590450db9f5e9cdd20a46745c27020b5ae441a695cd32dfc37c552bf654",
+      "bytes": 1284,
+      "redactions": []
+    },
+    {
+      "path": "controls/output-group-swap.patch",
+      "kind": "verbatim-original",
+      "source": "private-output-swap.patch",
+      "sha256": "231c4f331d4c8de5b3e629c6c28db2ab1e81a35a6a4086af38aa31128bfe7f6d",
+      "bytes": 1185,
+      "redactions": []
+    },
+    {
+      "path": "historical/run-frozen-test.sh",
+      "kind": "verbatim-original",
+      "source": "run-frozen-test.sh",
+      "sha256": "f6c48c72213a081bd68a4a6360b305e9947c5c74a56203e4beaabdefe77e3156",
+      "bytes": 2054,
+      "redactions": []
+    },
+    {
+      "path": "LICENSE",
+      "kind": "verbatim-original",
+      "source": "cpu-preparation/source-clean/LICENSE",
+      "sha256": "8cfe69ff13c773f5f62365a58c94a9b4c36ea8f76c9cdf5e387107fa77afb4f4",
+      "bytes": 11343,
+      "redactions": []
+    },
+    {
+      "path": "NOTICE",
+      "kind": "verbatim-original",
+      "source": "cpu-preparation/source-clean/NOTICE",
+      "sha256": "3add2368d32d9fa40c4020dfa0e4a1dbcb542f99a90ac0c7ea903c2c0d687fa3",
+      "bytes": 661,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-normal/compile.command",
+      "kind": "verbatim-original",
+      "source": "public-A-1/record/checks/compile.command",
+      "sha256": "ec5b5080c4332d9cc2750c088c932385e9235a9a5f9431bf3f7f5806b79886b1",
+      "bytes": 763,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-normal/compile.stderr",
+      "kind": "verbatim-original",
+      "source": "public-A-1/record/checks/compile.stderr",
+      "sha256": "dbf66ccb3661900638359828becc43f1158fc68a50baee02e091c47f69ff4f39",
+      "bytes": 6672,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-normal/compile.exit",
+      "kind": "verbatim-original",
+      "source": "public-A-1/record/checks/compile.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-normal/compile.capture-exit",
+      "kind": "verbatim-original",
+      "source": "public-A-1/record/checks/compile.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-normal/source-at-compile.sha256",
+      "kind": "verbatim-original",
+      "source": "public-A-1/record/checks/source-at-compile.sha256",
+      "sha256": "eede818a3dd24b5674e874986b2fbc6a3480f3ee043a93697697745b85250b59",
+      "bytes": 913,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-normal/binary.sha256",
+      "kind": "verbatim-original",
+      "source": "public-A-1/record/checks/binary.sha256",
+      "sha256": "94c32173a46e8894d8074de5d01d50d4e2dbb533171efa58e3ddfdf0e73c6daa",
+      "bytes": 218,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-normal/rustc-before.txt",
+      "kind": "verbatim-original",
+      "source": "public-A-1/record/checks/rustc-before.txt",
+      "sha256": "bad5444a63089c36f7ab533cfb95f78c2ef4a4440bbed965d6458e322361da30",
+      "bytes": 212,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-normal/cargo-before.txt",
+      "kind": "verbatim-original",
+      "source": "public-A-1/record/checks/cargo-before.txt",
+      "sha256": "44723352161599307344f2bea07569fd8cb23e82cca593b39f8f834d30af93f2",
+      "bytes": 44,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-fault/compile.command",
+      "kind": "verbatim-original",
+      "source": "private-build-A/record/checks/compile.command",
+      "sha256": "ec5b5080c4332d9cc2750c088c932385e9235a9a5f9431bf3f7f5806b79886b1",
+      "bytes": 763,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-fault/compile.stderr",
+      "kind": "verbatim-original",
+      "source": "private-build-A/record/checks/compile.stderr",
+      "sha256": "86e14fdb96125f0aaa3a2440aa0107ec7c13c2d72111521a1b148dd63209108d",
+      "bytes": 6672,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-fault/compile.exit",
+      "kind": "verbatim-original",
+      "source": "private-build-A/record/checks/compile.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-fault/compile.capture-exit",
+      "kind": "verbatim-original",
+      "source": "private-build-A/record/checks/compile.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-fault/source-at-compile.sha256",
+      "kind": "verbatim-original",
+      "source": "private-build-A/record/checks/source-at-compile.sha256",
+      "sha256": "7eb76d58a22c85b67eea97e59cfaac7a754d7098b31dff7bf3f756cf5d79a95a",
+      "bytes": 913,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-fault/binary.sha256",
+      "kind": "verbatim-original",
+      "source": "private-build-A/record/checks/binary.sha256",
+      "sha256": "8adfb1ed5f395abdc17385f2c5a72a37045619cec3593e2a37055ce3c0316a57",
+      "bytes": 218,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-fault/rustc-before.txt",
+      "kind": "verbatim-original",
+      "source": "private-build-A/record/checks/rustc-before.txt",
+      "sha256": "bad5444a63089c36f7ab533cfb95f78c2ef4a4440bbed965d6458e322361da30",
+      "bytes": 212,
+      "redactions": []
+    },
+    {
+      "path": "builds/A-fault/cargo-before.txt",
+      "kind": "verbatim-original",
+      "source": "private-build-A/record/checks/cargo-before.txt",
+      "sha256": "44723352161599307344f2bea07569fd8cb23e82cca593b39f8f834d30af93f2",
+      "bytes": 44,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-normal/compile.command",
+      "kind": "verbatim-original",
+      "source": "public-B-1/record/checks/compile.command",
+      "sha256": "ec5b5080c4332d9cc2750c088c932385e9235a9a5f9431bf3f7f5806b79886b1",
+      "bytes": 763,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-normal/compile.stderr",
+      "kind": "verbatim-original",
+      "source": "public-B-1/record/checks/compile.stderr",
+      "sha256": "88623ee01070f69989c9b85805c1d502317598d435987f5f4fb37efe6d2d66d7",
+      "bytes": 6672,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-normal/compile.exit",
+      "kind": "verbatim-original",
+      "source": "public-B-1/record/checks/compile.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-normal/compile.capture-exit",
+      "kind": "verbatim-original",
+      "source": "public-B-1/record/checks/compile.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-normal/source-at-compile.sha256",
+      "kind": "verbatim-original",
+      "source": "public-B-1/record/checks/source-at-compile.sha256",
+      "sha256": "280f8e599641c745c512abb775aa3a7803e88810d5e7f4e8af51efd63047cb0e",
+      "bytes": 913,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-normal/binary.sha256",
+      "kind": "verbatim-original",
+      "source": "public-B-1/record/checks/binary.sha256",
+      "sha256": "307485f07376a7cd3f12eefd1f7f789534f983038db998be392c26903e5ce817",
+      "bytes": 218,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-normal/rustc-before.txt",
+      "kind": "verbatim-original",
+      "source": "public-B-1/record/checks/rustc-before.txt",
+      "sha256": "bad5444a63089c36f7ab533cfb95f78c2ef4a4440bbed965d6458e322361da30",
+      "bytes": 212,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-normal/cargo-before.txt",
+      "kind": "verbatim-original",
+      "source": "public-B-1/record/checks/cargo-before.txt",
+      "sha256": "44723352161599307344f2bea07569fd8cb23e82cca593b39f8f834d30af93f2",
+      "bytes": 44,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-fault/compile.command",
+      "kind": "verbatim-original",
+      "source": "private-build-B/record/checks/compile.command",
+      "sha256": "ec5b5080c4332d9cc2750c088c932385e9235a9a5f9431bf3f7f5806b79886b1",
+      "bytes": 763,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-fault/compile.stderr",
+      "kind": "verbatim-original",
+      "source": "private-build-B/record/checks/compile.stderr",
+      "sha256": "1c54378c8e3ceeb4f91e7015fb91c13de708f01090373e78235bec66f6e11159",
+      "bytes": 6672,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-fault/compile.exit",
+      "kind": "verbatim-original",
+      "source": "private-build-B/record/checks/compile.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-fault/compile.capture-exit",
+      "kind": "verbatim-original",
+      "source": "private-build-B/record/checks/compile.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-fault/source-at-compile.sha256",
+      "kind": "verbatim-original",
+      "source": "private-build-B/record/checks/source-at-compile.sha256",
+      "sha256": "16c9c2b9f59a343b7633c64cba82529d1c563c443fd0b488e1cd49b0f16311a3",
+      "bytes": 913,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-fault/binary.sha256",
+      "kind": "verbatim-original",
+      "source": "private-build-B/record/checks/binary.sha256",
+      "sha256": "5082652d61c2bf1e6c13967722e6a7bcfa8f67617fcd8a435e8ec57a28e6007d",
+      "bytes": 218,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-fault/rustc-before.txt",
+      "kind": "verbatim-original",
+      "source": "private-build-B/record/checks/rustc-before.txt",
+      "sha256": "bad5444a63089c36f7ab533cfb95f78c2ef4a4440bbed965d6458e322361da30",
+      "bytes": 212,
+      "redactions": []
+    },
+    {
+      "path": "builds/B-fault/cargo-before.txt",
+      "kind": "verbatim-original",
+      "source": "private-build-B/record/checks/cargo-before.txt",
+      "sha256": "44723352161599307344f2bea07569fd8cb23e82cca593b39f8f834d30af93f2",
+      "bytes": 44,
+      "redactions": []
+    },
+    {
+      "path": "units/A-1/execute.stdout",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-1/012-execute.stdout",
+      "sha256": "868ba4b16cbbf6dea91eaa72abb34a17ab726156fd8e4101509aed5e9381ba3d",
+      "bytes": 254167,
+      "redactions": []
+    },
+    {
+      "path": "units/A-1/execute.stderr",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-1/012-execute.stderr",
+      "sha256": "1d0afdc7a06401b22f85ee15bb25a7a8bac8f3ad8777a1f770570943e14b7f4b",
+      "bytes": 83,
+      "redactions": []
+    },
+    {
+      "path": "units/A-1/execute.exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-1/012-execute.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/A-1/execute.capture-exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-1/012-execute.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/A-1/execute.result.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-1/012-execute.result.json",
+      "sha256": "78cf9fe7b98e912b63f5a03c0304706047689767e6f3cc1dea81ed6349b09e12",
+      "bytes": 143,
+      "redactions": []
+    },
+    {
+      "path": "units/A-1/observation.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-1/observation.json",
+      "sha256": "a351d49d897f0ed4ef73ba0e39c52e9479702c75c2145f8fbaa7496654f5b704",
+      "bytes": 474,
+      "redactions": []
+    },
+    {
+      "path": "units/A-1/artifact-link.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-1/artifact-link.json",
+      "sha256": "121121bc1eb092857d78c06438fb4b45686589c258ebc5d6c481b19eb679c4b7",
+      "bytes": 685,
+      "redactions": []
+    },
+    {
+      "path": "units/A-2/execute.stdout",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-2/028-execute.stdout",
+      "sha256": "71974161b4b7735d17a47a57faca2750b739dcb47ab67481302ec3d4006db95b",
+      "bytes": 254479,
+      "redactions": []
+    },
+    {
+      "path": "units/A-2/execute.stderr",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-2/028-execute.stderr",
+      "sha256": "e6ba0c289177acea1452f547808fde2513e64e74d89b54636f53d7af744b4f82",
+      "bytes": 83,
+      "redactions": []
+    },
+    {
+      "path": "units/A-2/execute.exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-2/028-execute.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/A-2/execute.capture-exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-2/028-execute.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/A-2/execute.result.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-2/028-execute.result.json",
+      "sha256": "b4fb6f2ea58ffbf2351031dadaebeefbba1510a3b87abaa8fc532fc951aefdd1",
+      "bytes": 143,
+      "redactions": []
+    },
+    {
+      "path": "units/A-2/observation.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-2/observation.json",
+      "sha256": "cd49e05af9777619ae7caab2131a4abd138ebd6fc453e12d99521449de6c923a",
+      "bytes": 486,
+      "redactions": []
+    },
+    {
+      "path": "units/A-2/artifact-link.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-2/artifact-link.json",
+      "sha256": "4f43c2f630c53bc8005ae1c345aa7125f138224e30895e004ceaa5cbcd6acf6f",
+      "bytes": 685,
+      "redactions": []
+    },
+    {
+      "path": "units/A-3/execute.stdout",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-3/044-execute.stdout",
+      "sha256": "1419b19ad056a479f38d1fc746802c703eafd5ed32aeb00bff2779165375f298",
+      "bytes": 254219,
+      "redactions": []
+    },
+    {
+      "path": "units/A-3/execute.stderr",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-3/044-execute.stderr",
+      "sha256": "2db7de2e4cbd76a8a91f4d0e8419536c485bc7475ab766beee153279dd0d84bd",
+      "bytes": 83,
+      "redactions": []
+    },
+    {
+      "path": "units/A-3/execute.exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-3/044-execute.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/A-3/execute.capture-exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-3/044-execute.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/A-3/execute.result.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-3/044-execute.result.json",
+      "sha256": "b997a79fcc12e78b404eaf297336da762236d5446d5c2d2c058c214ce57a5b55",
+      "bytes": 143,
+      "redactions": []
+    },
+    {
+      "path": "units/A-3/observation.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-3/observation.json",
+      "sha256": "8db79227df140f1213b886cf55a1c277def06bf4a36539c01714eb926af6c587",
+      "bytes": 476,
+      "redactions": []
+    },
+    {
+      "path": "units/A-3/artifact-link.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-3/artifact-link.json",
+      "sha256": "88d0dc0866a40df1a28c330d5fd57b57bfc69b2fe90c4f51b8de17e50a590dc7",
+      "bytes": 685,
+      "redactions": []
+    },
+    {
+      "path": "units/A-4/execute.stdout",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-4/060-execute.stdout",
+      "sha256": "2d0077f4e7d5e99834a4168776b1eb3d30f1021c5c93f6df775a5b8b0a898d87",
+      "bytes": 44576,
+      "redactions": []
+    },
+    {
+      "path": "units/A-4/execute.stderr",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-4/060-execute.stderr",
+      "sha256": "e24d788e71f272decf9d355bee01fbfbea96db2799a56d508174b80824251fcc",
+      "bytes": 375,
+      "redactions": []
+    },
+    {
+      "path": "units/A-4/execute.exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-4/060-execute.exit",
+      "sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+      "bytes": 4,
+      "redactions": []
+    },
+    {
+      "path": "units/A-4/execute.capture-exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-4/060-execute.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/A-4/execute.result.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-4/060-execute.result.json",
+      "sha256": "b35923df50d8ddc90656002bf39573353b8e1e2bbca03e08141c3a7682193891",
+      "bytes": 144,
+      "redactions": []
+    },
+    {
+      "path": "units/A-4/observation.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-4/observation.json",
+      "sha256": "78cfce18d4f6166dcba93bb149f30bde3827015472e0afbba9c947619582b377",
+      "bytes": 512,
+      "redactions": []
+    },
+    {
+      "path": "units/A-4/artifact-link.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/A-4/artifact-link.json",
+      "sha256": "d9cf6a633013c11d5b7b297c41ab50f2dc718f9e42299b585bce5fb883168b3d",
+      "bytes": 685,
+      "redactions": []
+    },
+    {
+      "path": "units/B-1/execute.stdout",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-1/076-execute.stdout",
+      "sha256": "122600321ed4a683a0c6af0c24f20d1ef08b0c73e9352d4f8aaa100b7100a620",
+      "bytes": 157707,
+      "redactions": []
+    },
+    {
+      "path": "units/B-1/execute.stderr",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-1/076-execute.stderr",
+      "sha256": "b47ca17006dfa2071221686720f32639f5ec64a167cce208b262ce0fb874ba44",
+      "bytes": 83,
+      "redactions": []
+    },
+    {
+      "path": "units/B-1/execute.exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-1/076-execute.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/B-1/execute.capture-exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-1/076-execute.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/B-1/execute.result.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-1/076-execute.result.json",
+      "sha256": "9e0218e221a6505b909c368d89fa66e4bd9c727064e05649cb0cd749aa6e53b5",
+      "bytes": 143,
+      "redactions": []
+    },
+    {
+      "path": "units/B-1/observation.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-1/observation.json",
+      "sha256": "bc42102fb1ad1b1ba2ebac4bc9175ee158c5fa829149545dbfefdc790c4a66ab",
+      "bytes": 474,
+      "redactions": []
+    },
+    {
+      "path": "units/B-1/artifact-link.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-1/artifact-link.json",
+      "sha256": "31c1e5ad37087785db39844dfbbdf6946e528a645d467f7116a1fb17cf5258c8",
+      "bytes": 685,
+      "redactions": []
+    },
+    {
+      "path": "units/B-2/execute.stdout",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-2/092-execute.stdout",
+      "sha256": "5eff140c672a62757e3556a31f850ce2c6c000a85199ad01e80c75cd5cc47c56",
+      "bytes": 157935,
+      "redactions": []
+    },
+    {
+      "path": "units/B-2/execute.stderr",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-2/092-execute.stderr",
+      "sha256": "7c5b39b3a6becd1c1c859811861444eb8b067b34566f00d329177661f6dffb9a",
+      "bytes": 83,
+      "redactions": []
+    },
+    {
+      "path": "units/B-2/execute.exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-2/092-execute.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/B-2/execute.capture-exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-2/092-execute.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/B-2/execute.result.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-2/092-execute.result.json",
+      "sha256": "108a9a554642e768fc468cb57262f67e33708a0a41858bf1665389597f73a4e5",
+      "bytes": 143,
+      "redactions": []
+    },
+    {
+      "path": "units/B-2/observation.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-2/observation.json",
+      "sha256": "8dd92b14041adff3082ca58bc311512a0640f96bee59995d27e8c4bb01540007",
+      "bytes": 486,
+      "redactions": []
+    },
+    {
+      "path": "units/B-2/artifact-link.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-2/artifact-link.json",
+      "sha256": "dec9e43d81c2d03e35e81fd8d8e6df462bc77f91341c47614cdb6b2e31d07088",
+      "bytes": 685,
+      "redactions": []
+    },
+    {
+      "path": "units/B-3/execute.stdout",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-3/108-execute.stdout",
+      "sha256": "511690937be5a6a23916bad1a4444a4172c2617c2283cec3d9b5066b2bbadafc",
+      "bytes": 157745,
+      "redactions": []
+    },
+    {
+      "path": "units/B-3/execute.stderr",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-3/108-execute.stderr",
+      "sha256": "697d1739874383e3863f5c056bb24f25786350d6f36e2d1b64746066ff5fefe9",
+      "bytes": 83,
+      "redactions": []
+    },
+    {
+      "path": "units/B-3/execute.exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-3/108-execute.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/B-3/execute.capture-exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-3/108-execute.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/B-3/execute.result.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-3/108-execute.result.json",
+      "sha256": "8b71b906f5b2d2bf923dc5fce89b01d767af7e01317b0dc1f61cf9d7656e7011",
+      "bytes": 143,
+      "redactions": []
+    },
+    {
+      "path": "units/B-3/observation.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-3/observation.json",
+      "sha256": "dc0727793d73e9f7fe7254ac8442cc60150e1c94da1d7c60d009829768c1cd05",
+      "bytes": 476,
+      "redactions": []
+    },
+    {
+      "path": "units/B-3/artifact-link.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-3/artifact-link.json",
+      "sha256": "6c8b192741b1c4e82863b60b4cc44df2c5f056864af3e178fce687d87979eb31",
+      "bytes": 685,
+      "redactions": []
+    },
+    {
+      "path": "units/B-4/execute.stdout",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-4/124-execute.stdout",
+      "sha256": "6f0cdf0ef6ef4dd3c4fe2fd5160da99815c5164c903fd473b967474a345b3fc3",
+      "bytes": 44531,
+      "redactions": []
+    },
+    {
+      "path": "units/B-4/execute.stderr",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-4/124-execute.stderr",
+      "sha256": "6ce7aceb4c0ff0b5fc3274ffe97f61f4b1bd50425e0f1dbda4a37382b108d9f0",
+      "bytes": 383,
+      "redactions": []
+    },
+    {
+      "path": "units/B-4/execute.exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-4/124-execute.exit",
+      "sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+      "bytes": 4,
+      "redactions": []
+    },
+    {
+      "path": "units/B-4/execute.capture-exit",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-4/124-execute.capture-exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2,
+      "redactions": []
+    },
+    {
+      "path": "units/B-4/execute.result.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-4/124-execute.result.json",
+      "sha256": "ec7e05b01b1900dda2c2ec0908c9cc3f726f3a0e0c2cdb5ce1d0776ad7f0fde8",
+      "bytes": 144,
+      "redactions": []
+    },
+    {
+      "path": "units/B-4/observation.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-4/observation.json",
+      "sha256": "ce47f2dfcb7b8b8fcb172140f9ba7f465f30a451cca65d12acaf1d9ea0329f3f",
+      "bytes": 512,
+      "redactions": []
+    },
+    {
+      "path": "units/B-4/artifact-link.json",
+      "kind": "verbatim-original",
+      "source": "final-evaluation-all/B-4/artifact-link.json",
+      "sha256": "6647c2c1fd937adb7bb6af4e74d0d66217ffbed5875c48fe7ec42b4be3399e0e",
+      "bytes": 685,
+      "redactions": []
+    },
+    {
+      "path": "README.md",
+      "kind": "new-publication-file",
+      "source": null,
+      "sha256": "591b87aa109fa4285de3d77d63f404ce596169bf3378f40113145af45dbbbd15",
+      "bytes": 6500,
+      "redactions": []
+    },
+    {
+      "path": "results.json",
+      "kind": "derived-publication-summary",
+      "source": null,
+      "sha256": "cf9db1cd807455eec9d5d6a24549a1d7d69733a5cab7572c8baaad6db21906ff",
+      "bytes": 10883,
+      "redactions": []
+    },
+    {
+      "path": "check_evidence.py",
+      "kind": "new-publication-file",
+      "source": null,
+      "sha256": "c0775bdb25724804cdc4562319db7227968cc3ba7717715a0c916d8d76f2f2e3",
+      "bytes": 6727,
+      "redactions": []
+    }
+  ],
+  "scope": "Verbatim copied files have no redactions. results.json is a derived summary with field-specific omission/derivation records. Other package files are new publication documentation or checks."
+}

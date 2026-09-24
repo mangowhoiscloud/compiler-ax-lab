@@ -214,6 +214,25 @@ if (process.argv[2] === '--self-test') {
   process.exit(0);
 }
 
+// Exact, privacy-reviewed historical archive; changes require a new reviewed pin.
+const archive = 'evidence/cpu-ab-2026-09-16';
+const manifestPath = `${archive}/manifest.json`;
+const manifestBytes = readFileSync(resolve(root, manifestPath));
+assert.equal(
+  createHash('sha256').update(manifestBytes).digest('hex'),
+  '76c9f850372f4f110880ad36ddcc40a2e9cfd917a6cea53d53d7cae9e3b94d50',
+  'Archive differs from the reviewed manifest',
+);
+allowed.add(manifestPath);
+for (const entry of JSON.parse(manifestBytes).files) {
+  const name = `${archive}/${entry.path}`;
+  assert.equal(relative(root, resolve(root, name)), name, 'Archive path must be relative and canonical');
+  const bytes = readFileSync(resolve(root, name));
+  assert.equal(bytes.length, entry.bytes, `Archive size: ${name}`);
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), entry.sha256, `Archive hash: ${name}`);
+  allowed.add(name);
+}
+
 const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: root })
   .toString()
   .split('\0')
@@ -288,6 +307,7 @@ for (const fragment of [
   'persist-credentials: false',
   'branches: [dev, main]',
   'node scripts/check.mjs',
+  'python3 evidence/cpu-ab-2026-09-16/check_evidence.py',
   'unittest.defaultTestLoader.discover',
   '--ci-plan',
   '--ci-gate',
