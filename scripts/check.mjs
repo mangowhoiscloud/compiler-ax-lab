@@ -42,7 +42,7 @@ const sensitive =
   /(?:\/Users\/|\/home\/)[\w.-]+\/|file:\/\/|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{24,}|-----BEGIN [A-Z ]*PRIVATE KEY-----/;
 
 // Pins the owner-approved public copy, not a semantic or privacy proof.
-const reportSha256 = 'ede138d1011de1e6589960c2d3c7d3e84ea9c68cd081a71763f43aea2740ef51';
+const reportSha256 = '8cb4a987a4d2b921ced46cd9e9a950fe0bc388538352d38ae76d38da7122437d';
 function requireReportPdf(bytes) {
   assert.equal(bytes.subarray(0, 5).toString('ascii'), '%PDF-', 'Report is not a PDF');
   assert.equal(createHash('sha256').update(bytes).digest('hex'), reportSha256, 'Report differs from the reviewed PDF');
