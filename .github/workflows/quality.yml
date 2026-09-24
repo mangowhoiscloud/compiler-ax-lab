@@ -34,6 +34,7 @@ jobs:
           DIFF_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: node scripts/check.mjs --ci-plan "$DIFF_BASE" >> "$GITHUB_OUTPUT"
       - run: node scripts/check.mjs
+      - run: python3 evidence/cpu-ab-2026-09-16/check_evidence.py
       - name: Lint workflow syntax, expressions and shell steps
         run: |
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12

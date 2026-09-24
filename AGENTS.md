@@ -1,6 +1,6 @@
 # Compiler AX Lab: task entrypoint
 
-These instructions apply throughout this repository. The purpose is to let a human judge an agent-generated change from its cause, impact, and verification evidence. Public files contain the executable system and its required contracts; source research, design history, and experiment records remain local.
+These instructions apply throughout this repository. The purpose is to let a human judge an agent-generated change from its cause, impact, and verification evidence. Public files contain the executable system, its required contracts, and the owner-authorized [CPU A/B archive](evidence/cpu-ab-2026-09-16/README.md); other source research, design history, and operational records remain local.
 
 ## 1. Choose the route for the request
 
@@ -52,7 +52,7 @@ Read official instructions, the contemporaneous code, and reviews only when requ
 
 Follow feature branch → `dev` → `main`. Squash feature-to-dev PRs; use a separate merge-commit PR from dev to main to preserve shared ancestry. At each stage, verify CI for the current head/base and the user's explicit merge request. Use Draft only while implementation or required checks remain; mark reviewable changes Ready for review. Do not push directly to `dev` or `main`, force-push, schedule automatic merges, or create duplicate PRs. See the [merge contract](docs/merge.md).
 
-Stage only the exact publishable files and review the full diff against the current base. Do not commit `.local/`, account, billing, or authentication information, application materials, research originals, protected inputs, or raw execution records. The owner-approved `report.pdf` is the sole report-publication exception; follow the [report publication checks](docs/quality.md#report-publication) for every replacement. This does not authorize publication of its sources or supporting private evidence. Before deleting material, verify ownership, backups, and recoverability; do not remove files needed by an active run. `.gitignore` and Markdown rules are not OS access controls.
+Stage only the exact publishable files and review the full diff against the current base. Do not commit `.local/`, account, billing, or authentication information, application materials, research originals, protected inputs, or raw execution records. The owner-authorized `evidence/cpu-ab-2026-09-16/` archive is a narrow exception for its frozen sources, disclosed control and privacy-reviewed execution evidence; preserve original bytes and record any redaction. Its disclosed control cannot serve as a future held-out test. The owner-approved `report.pdf` remains the sole report-publication exception; follow the [report publication checks](docs/quality.md#report-publication) for every replacement. Other report sources and private evidence remain local. Before deleting material, verify ownership, backups, and recoverability; do not remove files needed by an active run. `.gitignore` and Markdown rules are not OS access controls.
 
 When the public file set changes, update the existing `scripts/check.mjs` allowlist and reading routes together. After pushing, recheck the remote SHA and latest CI; do not reuse a previous head's success. Merging, releasing, cloud provisioning, and submitting upstream to Furiosa require separate explicit requests.
 

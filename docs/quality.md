@@ -36,7 +36,7 @@ When adding a tool or rule, update the affected language's code, configuration, 
 
 ### Report publication
 
-The owner-approved [report.pdf](../report.pdf) is the only published binary. Before replacing it, inspect extracted text, link annotations, metadata, and rendered pages for private information, unsupported claims, and layout defects. Update its approved SHA-256 in `scripts/check.mjs` only after that review. The checker rejects different bytes; it does not interpret PDF content or establish factual correctness. Sources, protected inputs, and raw evidence remain local.
+The owner-approved [report.pdf](../report.pdf) is the only published binary. Before replacing it, inspect extracted text, link annotations, metadata, and rendered pages for private information, unsupported claims, and layout defects. Update its approved SHA-256 in `scripts/check.mjs` only after that review. The checker rejects different bytes; it does not interpret PDF content or establish factual correctness. Report sources remain local. The separately authorized [CPU A/B archive](../evidence/cpu-ab-2026-09-16/README.md) publishes frozen source and selected historical execution evidence with hashes and explicit redaction records; other protected inputs and operational records remain local.
 
 The existing quality workflow publishes only `report.pdf` after `lab-ci` succeeds on a push to `main`. PR and `dev` runs cannot deploy; Pages write permissions are confined to the deployment job and its `github-pages` environment. Changes still follow feature → dev → main. After deployment, retrieve the public URL and compare its SHA-256 with the checked repository copy before reporting completion.
 

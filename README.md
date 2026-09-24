@@ -2,13 +2,13 @@
 
 Compiler AX Lab explores how to turn coding-agent drafts into reviewable software changes. It connects a bounded change to its cause, preserved behavior, executed checks, and remaining human decisions.
 
-The public repository contains a Python standard-library runner, Rust test examples for the public `furiosa-opt` SDK, and the contracts needed to reproduce and review them. It is independent research, unaffiliated with FuriosaAI; it does not reproduce Furiosa's internal production compiler or NPU.
+The public repository contains a Python standard-library runner, Rust test examples for the public `furiosa-opt` SDK, their execution contracts, and a [frozen CPU A/B evidence archive](evidence/cpu-ab-2026-09-16/README.md). It is independent research, unaffiliated with FuriosaAI.
 
 ## Report
 
-Read the [Compiler AX Retrospective (PDF)](https://mangowhoiscloud.github.io/compiler-ax-lab/report.pdf), or use the [repository copy](report.pdf). The 14-page Korean report connects the completed CPU test-improvement pilot to a proposed expert-reviewed compiler-development workflow. Measured results, owner selection, and future adoption are distinguished throughout; this retrospective is not the original submitted assignment.
+Read the [Compiler AX Retrospective (PDF)](https://mangowhoiscloud.github.io/compiler-ax-lab/report.pdf), or use the [repository copy](report.pdf). The 14-page Korean report connects the completed CPU test-improvement pilot to a proposed expert-reviewed compiler-development workflow. The 25 September revision links the frozen public evidence and adds cheap iteration, horizontal/system expansion, and Karpathy/Architect Labs primary references. Measured results, owner selection, and future adoption are distinguished throughout; this retrospective is not the original submitted assignment.
 
-Only the reviewed PDF is published to GitHub Pages. Its source documents, protected evaluations, and raw records remain local. The [publication checks](docs/quality.md#report-publication) pin the reviewed bytes; deployment follows successful `main` CI.
+Only the reviewed PDF is published to GitHub Pages. The repository separately publishes the owner-authorized CPU A/B archive; report sources and private operational records remain local. The [publication checks](docs/quality.md#report-publication) pin the reviewed PDF bytes; deployment follows successful `main` CI.
 
 ## How it works
 
@@ -39,7 +39,7 @@ To try a bounded change, follow the [group-reduction demo](program.md). Copy the
 | Execution procedure | Diagnose and check a candidate copy; supervise separately authorized experiments | [program.md](program.md), [execution skill](.agents/skills/run-bounded-change-loop/SKILL.md) |
 | Review and publication | Connect the current diff to its checks, ownership, and permitted Git actions | [AGENTS.md](AGENTS.md), [review skill](.agents/skills/review-to-verified-pr/SKILL.md), [merge contract](docs/merge.md) |
 
-The Python runner has no Rust adapter: `trial.py init --task furiosa` does not execute a compiler task. Rust cases use Cargo in a compatible x86-64 environment. Private A/B controllers, protected inputs, and raw experiment records are not part of the public checkout.
+The Python runner has no Rust adapter: `trial.py init --task furiosa` does not execute a compiler task. Rust cases use Cargo in a compatible x86-64 environment. The [historical A/B archive](evidence/cpu-ab-2026-09-16/README.md) supplies the frozen candidates, task, additional procedure, disclosed control and selected execution evidence. Candidate-generation transcripts and private controllers remain local.
 
 ## Reproducing the Rust cases
 
@@ -77,7 +77,7 @@ The frozen pilot compared one pair on one Rust test-improvement task. A received
 
 All eight units ran after both candidates were frozen. Each executed one selected SDK test, with none ignored; the two expected failures were traced to the intended numerical assertions. **The control result was a tie.** Source, binary, output, and exit records were cross-checked, and protected results were not returned for candidate repair.
 
-The project owner selected frozen B after an [AI-assisted source review](https://github.com/mangowhoiscloud/compiler-ax-lab/pull/11#pullrequestreview-5223709126) of output-coordinate discrimination and explicit fixture bounds. That coverage argument was not an additional scored fault execution. The selection is local CPU-test adoption, not evidence that B's procedure is more effective, a personal human Rust audit, or Furiosa approval. The public Rust example remains the earlier, separately measured reference; it is not the frozen B candidate.
+The project owner selected frozen B after an [AI-assisted source review](https://github.com/mangowhoiscloud/compiler-ax-lab/pull/11#pullrequestreview-5223709126) of output-coordinate discrimination and explicit fixture bounds. That coverage argument was not an additional scored fault execution. The selection applies to the fixed-shape CPU test. The [frozen A/B archive](evidence/cpu-ab-2026-09-16/README.md) now exposes the exact candidate files and historical execution evidence; the original public Rust example remains the earlier, separately measured reference. The disclosed fault is a regression example for future work, not a held-out evaluation.
 
 Candidate generation used a fixed B-then-A order; an approved account change and host-cache cleanup also prevent a clean productivity comparison. Human active time was not measured. Different fixture counts do not create additional independent evaluation units.
 
@@ -96,7 +96,7 @@ Use feature branch → `dev` → `main`: squash feature PRs into `dev`, then pro
 
 Use Draft while implementation or required checks remain; mark a checked diff Ready for review. The required `lab-ci` gate rejects failed, cancelled, missing, or unexpectedly skipped selected jobs. Do not push directly to shared branches or rewrite history. Human acceptance of an experiment result remains separate from a merge.
 
-Research originals, design history, presentation sources, protected evaluations, raw logs, and credentials remain Git-ignored local material. The public tree contains executable examples, their necessary contracts, and the explicitly approved final report PDF, not a live experiment dashboard. Earlier published material remains in Git history.
+The owner-authorized [CPU A/B archive](evidence/cpu-ab-2026-09-16/README.md) is a scoped publication of frozen sources and selected, privacy-reviewed historical records. Other research originals, design history, presentation sources, protected evaluations, operational logs, and credentials remain local. Earlier published material remains in Git history.
 
 ## Design references
 

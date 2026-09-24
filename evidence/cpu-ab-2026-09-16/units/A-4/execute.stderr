@@ -1,0 +1,5 @@
+
+thread 'test_double_buffering_software_pipelined' (13) panicked at furiosa-opt-examples/tests/double_buffering_tests.rs:67:17:
+software_pipelined case=basis_offset_0 coordinate=(0,0,0) expected=1 actual=bf16(9.0)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+runtime_wall_seconds=1.028 runtime_user_seconds=1.345 runtime_system_seconds=0.013
