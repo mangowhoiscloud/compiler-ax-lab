@@ -1,0 +1,21 @@
+diff --git a/furiosa-opt-examples/src/double_buffering/software_pipelined_kernel.rs b/furiosa-opt-examples/src/double_buffering/software_pipelined_kernel.rs
+--- a/furiosa-opt-examples/src/double_buffering/software_pipelined_kernel.rs
++++ b/furiosa-opt-examples/src/double_buffering/software_pipelined_kernel.rs
+@@ -44,7 +44,7 @@
+             .contract_lane::<m![1], m![Out]>(LaneMode::Interleaved)
+             .cast::<bf16, m![Out # 16]>()
+             .commit_trim::<m![Out]>()
+-            .commit_view(output.view_mut().tile::<m![Group], 1, m![1 #{!} 20, Out]>(first));
++            .commit_view(output.view_mut().tile::<m![Group], 1, m![1 #{!} 20, Out]>(second));
+         device
+             .main
+             .begin(activation.view())
+@@ -57,7 +57,7 @@
+             .contract_lane::<m![1], m![Out]>(LaneMode::Interleaved)
+             .cast::<bf16, m![Out # 16]>()
+             .commit_trim::<m![Out]>()
+-            .commit_view(output.view_mut().tile::<m![Group], 1, m![1 #{!} 20, Out]>(second));
++            .commit_view(output.view_mut().tile::<m![Group], 1, m![1 #{!} 20, Out]>(first));
+     }
+ 
+     let mut result = HbmTensor::<bf16, Chip, m![Tok, Group, Out]>::new();

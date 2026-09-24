@@ -1,0 +1,12 @@
+{
+  "arm": "B",
+  "unit": 2,
+  "implementation": "normal",
+  "test": "test_double_buffering_software_pipelined",
+  "observation": "PASS",
+  "classification": "REQUIRES_REVIEW",
+  "reason": "Raw execution observation only; reviewer must establish assertion coverage and intended numerical failure, not infer TP from panic text.",
+  "binarySha256": "898129279e7c9def24b771a4727ae527f32d2414da73aad95a5d0e382f555912",
+  "buildLocation": "public-B-1",
+  "executionReceipt": "092-execute"
+}

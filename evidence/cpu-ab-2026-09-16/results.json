@@ -1,0 +1,294 @@
+{
+  "schemaVersion": 1,
+  "kind": "derived-publication-summary",
+  "historicalRun": "ab-pilot-20260915-yETyK8H5",
+  "historicalFinishedAt": "2026-09-16T10:39:21.829Z",
+  "publicationScope": "Selected historical source, build and execution evidence; no new SDK run; not the full 825-artifact operational archive.",
+  "sourcePin": "9b9cf0fdc78df00cdc430eae725a5ad9084a735e",
+  "toolchain": "nightly-2026-05-01",
+  "environment": {
+    "os": "Ubuntu 24.04 amd64 under Docker/Rosetta on macOS",
+    "cpuCount": 2,
+    "memoryGiB": 6,
+    "cargoJobs": 1,
+    "rayonThreads": 2,
+    "testThreads": 1,
+    "runtimeTimeoutSeconds": 120,
+    "deviceExecution": false
+  },
+  "builds": [
+    {
+      "arm": "A",
+      "implementation": "normal",
+      "path": "builds/A-normal",
+      "sourceBuild": "public-A-1",
+      "binarySha256": "4c716de4da29cb4339f9d56baacca0578604871092770d20de0b98d96a397a9a",
+      "sourcePin": "9b9cf0fdc78df00cdc430eae725a5ad9084a735e",
+      "commandExit": 0,
+      "captureExit": 0,
+      "originalInputsSha256": "68c637e4ee7c4a99a957148e9f465a89c7992b0924843e69f7a03e2a9c2dc333",
+      "originalResultSha256": "4bf14070e6e132e0f617ab8b35d21c4256aa60b321cea3836c854277272a205c"
+    },
+    {
+      "arm": "A",
+      "implementation": "fault",
+      "path": "builds/A-fault",
+      "sourceBuild": "private-build-A",
+      "binarySha256": "d4f796f25ea0ccf5d25ad8b3a23171537d061620007afeafd1825eff9f6f4498",
+      "sourcePin": "9b9cf0fdc78df00cdc430eae725a5ad9084a735e",
+      "commandExit": 0,
+      "captureExit": 0,
+      "originalInputsSha256": "3b2ff897856d677fc7b5ad4a25b6060d452013241d953829607e18f9455e4e44",
+      "originalResultSha256": "e8af6f2d919748b233ee00f7b6e5b88bd453b96544e840950b06bbef7f74ab25"
+    },
+    {
+      "arm": "B",
+      "implementation": "normal",
+      "path": "builds/B-normal",
+      "sourceBuild": "public-B-1",
+      "binarySha256": "898129279e7c9def24b771a4727ae527f32d2414da73aad95a5d0e382f555912",
+      "sourcePin": "9b9cf0fdc78df00cdc430eae725a5ad9084a735e",
+      "commandExit": 0,
+      "captureExit": 0,
+      "originalInputsSha256": "6c45c350edcaa69beccfa6489b7695e1e694642c9a3e873c1cf69fea4fbed50a",
+      "originalResultSha256": "64fe50fe4c56f4b600f0a5a106b0725c5f690f6183c5d19049629a2b41a58f0c"
+    },
+    {
+      "arm": "B",
+      "implementation": "fault",
+      "path": "builds/B-fault",
+      "sourceBuild": "private-build-B",
+      "binarySha256": "81cbe853221dfa7ebc9632f5b09e7ad059b0f608544c8d7728bfb971df8783c4",
+      "sourcePin": "9b9cf0fdc78df00cdc430eae725a5ad9084a735e",
+      "commandExit": 0,
+      "captureExit": 0,
+      "originalInputsSha256": "3586f3e4af981d34620dbbe04c52f969da0060d5023368c716903dee1b7aebf3",
+      "originalResultSha256": "835ba0c83d6e879c5347019513ecd7db4e90ef0d5986656b027dd0e4c85ff1a4"
+    }
+  ],
+  "units": [
+    {
+      "id": "A-1",
+      "arm": "A",
+      "test": "test_double_buffering_rolled",
+      "implementation": "normal",
+      "rawObservation": "PASS",
+      "historicalOperatorClassification": "TN",
+      "classificationSource": "A-final-review.md",
+      "classificationSourceSha256": "c8ef60b6ca7c21550f4d733a0adeaab8303e48dac6288735fd7d1a1d83d247b3",
+      "binarySha256": "4c716de4da29cb4339f9d56baacca0578604871092770d20de0b98d96a397a9a",
+      "expectedCases": 6,
+      "assertionLine": null,
+      "commandExit": 0,
+      "captureExit": 0,
+      "evidencePath": "units/A-1"
+    },
+    {
+      "id": "A-2",
+      "arm": "A",
+      "test": "test_double_buffering_software_pipelined",
+      "implementation": "normal",
+      "rawObservation": "PASS",
+      "historicalOperatorClassification": "TN",
+      "classificationSource": "A-final-review.md",
+      "classificationSourceSha256": "c8ef60b6ca7c21550f4d733a0adeaab8303e48dac6288735fd7d1a1d83d247b3",
+      "binarySha256": "4c716de4da29cb4339f9d56baacca0578604871092770d20de0b98d96a397a9a",
+      "expectedCases": 6,
+      "assertionLine": null,
+      "commandExit": 0,
+      "captureExit": 0,
+      "evidencePath": "units/A-2"
+    },
+    {
+      "id": "A-3",
+      "arm": "A",
+      "test": "test_double_buffering_unrolled",
+      "implementation": "normal",
+      "rawObservation": "PASS",
+      "historicalOperatorClassification": "TN",
+      "classificationSource": "A-final-review.md",
+      "classificationSourceSha256": "c8ef60b6ca7c21550f4d733a0adeaab8303e48dac6288735fd7d1a1d83d247b3",
+      "binarySha256": "4c716de4da29cb4339f9d56baacca0578604871092770d20de0b98d96a397a9a",
+      "expectedCases": 6,
+      "assertionLine": null,
+      "commandExit": 0,
+      "captureExit": 0,
+      "evidencePath": "units/A-3"
+    },
+    {
+      "id": "A-4",
+      "arm": "A",
+      "test": "test_double_buffering_software_pipelined",
+      "implementation": "output-group-swap",
+      "rawObservation": "TEST_FAILURE",
+      "historicalOperatorClassification": "TP",
+      "classificationSource": "A-final-review.md",
+      "classificationSourceSha256": "c8ef60b6ca7c21550f4d733a0adeaab8303e48dac6288735fd7d1a1d83d247b3",
+      "binarySha256": "d4f796f25ea0ccf5d25ad8b3a23171537d061620007afeafd1825eff9f6f4498",
+      "expectedCases": 1,
+      "assertionLine": 67,
+      "commandExit": 101,
+      "captureExit": 0,
+      "evidencePath": "units/A-4"
+    },
+    {
+      "id": "B-1",
+      "arm": "B",
+      "test": "test_double_buffering_rolled",
+      "implementation": "normal",
+      "rawObservation": "PASS",
+      "historicalOperatorClassification": "TN",
+      "classificationSource": "B-final-review.md",
+      "classificationSourceSha256": "8dddff30a238d2d1e362de9abe4c95e544baecd07d865c897e1eb92af87cdec3",
+      "binarySha256": "898129279e7c9def24b771a4727ae527f32d2414da73aad95a5d0e382f555912",
+      "expectedCases": 4,
+      "assertionLine": null,
+      "commandExit": 0,
+      "captureExit": 0,
+      "evidencePath": "units/B-1"
+    },
+    {
+      "id": "B-2",
+      "arm": "B",
+      "test": "test_double_buffering_software_pipelined",
+      "implementation": "normal",
+      "rawObservation": "PASS",
+      "historicalOperatorClassification": "TN",
+      "classificationSource": "B-final-review.md",
+      "classificationSourceSha256": "8dddff30a238d2d1e362de9abe4c95e544baecd07d865c897e1eb92af87cdec3",
+      "binarySha256": "898129279e7c9def24b771a4727ae527f32d2414da73aad95a5d0e382f555912",
+      "expectedCases": 4,
+      "assertionLine": null,
+      "commandExit": 0,
+      "captureExit": 0,
+      "evidencePath": "units/B-2"
+    },
+    {
+      "id": "B-3",
+      "arm": "B",
+      "test": "test_double_buffering_unrolled",
+      "implementation": "normal",
+      "rawObservation": "PASS",
+      "historicalOperatorClassification": "TN",
+      "classificationSource": "B-final-review.md",
+      "classificationSourceSha256": "8dddff30a238d2d1e362de9abe4c95e544baecd07d865c897e1eb92af87cdec3",
+      "binarySha256": "898129279e7c9def24b771a4727ae527f32d2414da73aad95a5d0e382f555912",
+      "expectedCases": 4,
+      "assertionLine": null,
+      "commandExit": 0,
+      "captureExit": 0,
+      "evidencePath": "units/B-3"
+    },
+    {
+      "id": "B-4",
+      "arm": "B",
+      "test": "test_double_buffering_software_pipelined",
+      "implementation": "output-group-swap",
+      "rawObservation": "TEST_FAILURE",
+      "historicalOperatorClassification": "TP",
+      "classificationSource": "B-final-review.md",
+      "classificationSourceSha256": "8dddff30a238d2d1e362de9abe4c95e544baecd07d865c897e1eb92af87cdec3",
+      "binarySha256": "81cbe853221dfa7ebc9632f5b09e7ad059b0f608544c8d7728bfb971df8783c4",
+      "expectedCases": 1,
+      "assertionLine": 38,
+      "commandExit": 101,
+      "captureExit": 0,
+      "evidencePath": "units/B-4"
+    }
+  ],
+  "aggregate": {
+    "A": {
+      "TN": 3,
+      "TP": 1,
+      "FP": 0,
+      "FN": 0,
+      "INVALID": 0,
+      "NOT_RUN": 0
+    },
+    "B": {
+      "TN": 3,
+      "TP": 1,
+      "FP": 0,
+      "FN": 0,
+      "INVALID": 0,
+      "NOT_RUN": 0
+    }
+  },
+  "adoption": {
+    "date": "2026-09-16",
+    "decision": "Owner selected frozen B for the fixed-shape CPU test task; A retained as not selected.",
+    "reviewUrl": "https://github.com/mangowhoiscloud/compiler-ax-lab/pull/11#pullrequestreview-5223709126",
+    "reviewKind": "AI-assisted COMMENT review, not GitHub approval or Furiosa approval.",
+    "procedureAdvantage": "NOT_ESTABLISHED",
+    "humanActiveTime": "NOT_MEASURED"
+  },
+  "originalSources": [
+    {
+      "source": "final-evaluation-all/result.json",
+      "sha256": "c2c4db89f17724e721f7afa52790fd5913101cafc757a329a32ed3971454030d"
+    },
+    {
+      "source": "final-evaluation-all/inputs.json",
+      "sha256": "59a1d2588676dee558be803a4edc7b3c5003037a45114dad55bb3636918b4337"
+    },
+    {
+      "source": "A-frozen/manifest.json",
+      "sha256": "3bf13effdc671a014836c2741dbe022ce3e7fd13f0b72a2237a5d4614a0f9882"
+    },
+    {
+      "source": "B-frozen/manifest.json",
+      "sha256": "55bfbec276b0fa90cf5790a6fa253e83ce88eee9fd78aa65fc3386e23ec75317"
+    },
+    {
+      "source": "QUALIFICATION.json",
+      "sha256": "4e36f7bfe1e885378e7bafb3713b069891ab88ca9556e1cb565415abe1b18a5b"
+    }
+  ],
+  "publicationTransformations": [
+    {
+      "source": "final-evaluation-all/inputs.json",
+      "fields": [
+        "builds.A.normal.binary",
+        "builds.A.fault.binary",
+        "builds.B.normal.binary",
+        "builds.B.fault.binary"
+      ],
+      "action": "Omitted host-absolute binary paths; preserved binary SHA-256 and relative build evidence locations.",
+      "replacement": "builds[].path and builds[].binarySha256"
+    },
+    {
+      "source": "A-frozen/manifest.json and B-frozen/manifest.json",
+      "fields": [
+        "accountAmendmentSha256",
+        "draftResultSha256",
+        "revisionResultSha256",
+        "feedbackDeliveryAmendmentSha256"
+      ],
+      "action": "Omitted account and candidate-transcript locator fields from derived summary; original manifest digests retained.",
+      "replacement": null
+    },
+    {
+      "source": "final-evaluation-all/*/observation.json",
+      "fields": [
+        "classification"
+      ],
+      "action": "Original REQUIRES_REVIEW remains unchanged; historical AI-assisted operator TN/TP judgments are separate derived fields.",
+      "replacement": "units[].historicalOperatorClassification"
+    },
+    {
+      "source": "A-frozen/manifest.json and B-frozen/manifest.json",
+      "fields": [
+        "humanDisposition"
+      ],
+      "action": "Freeze-time PENDING not rewritten; later owner adoption is a separate record.",
+      "replacement": "adoption"
+    }
+  ],
+  "excluded": [
+    "Account/authentication/billing records and account hashes",
+    "Candidate session transcripts and surrounding personal context",
+    "Host/container inventories and operator handoffs",
+    "SDK/native libraries, Docker images, compiled test binaries and dependency caches",
+    "Earlier attempts and the remaining operational artifact archive"
+  ]
+}

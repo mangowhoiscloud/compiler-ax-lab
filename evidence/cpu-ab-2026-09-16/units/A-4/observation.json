@@ -1,0 +1,12 @@
+{
+  "arm": "A",
+  "unit": 4,
+  "implementation": "private-output-swap",
+  "test": "test_double_buffering_software_pipelined",
+  "observation": "TEST_FAILURE",
+  "classification": "REQUIRES_REVIEW",
+  "reason": "Raw execution observation only; reviewer must establish assertion coverage and intended numerical failure, not infer TP from panic text.",
+  "binarySha256": "d4f796f25ea0ccf5d25ad8b3a23171537d061620007afeafd1825eff9f6f4498",
+  "buildLocation": "private-build-A",
+  "executionReceipt": "060-execute"
+}
